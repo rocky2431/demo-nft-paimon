@@ -1,17 +1,781 @@
 {
   "metadata": {
     "version": "3.1.0",
-    "project_name": "demo-nft-paimon",
+    "project_name": "paimon-dex",
+    "project_type": "defi-protocol",
     "created": "2025-10-24T18:26:00Z",
-    "last_updated": "2025-10-24T18:26:00Z"
+    "last_updated": "2025-10-24T19:00:00Z",
+    "total_phases": 5,
+    "estimated_duration_weeks": 8,
+    "deployment_target": "BSC Mainnet (Testnet: BSC Testnet 97)"
   },
   "stats": {
-    "total": 0,
-    "pending": 0,
-    "in_progress": 0,
+    "total": 29,
+    "pending": 28,
+    "in_progress": 1,
     "blocked": 0,
     "completed": 0,
-    "cancelled": 0
+    "cancelled": 0,
+    "by_priority": {
+      "P0": 19,
+      "P1": 8,
+      "P2": 2
+    },
+    "by_complexity": {
+      "simple (1-3)": 2,
+      "medium (4-6)": 16,
+      "complex (7-10)": 11
+    }
   },
-  "tasks": []
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Core Contracts Development",
+      "duration_weeks": 2,
+      "description": "Week 1-2: HYD Token, PSM Module, VotingEscrow, PAIMON Token, Dev Environment, Internal Audit",
+      "status": "pending",
+      "task_ids": ["CORE-001", "CORE-002", "CORE-003", "CORE-004", "INFRA-001", "SEC-001"]
+    },
+    {
+      "id": "phase-2",
+      "name": "ve33 Governance Layer",
+      "duration_weeks": 2,
+      "description": "Week 3-4: GaugeController, RewardDistributor, BribeMarketplace, DEX Core, Invariant Testing",
+      "status": "pending",
+      "task_ids": ["GOV-001", "GOV-002", "GOV-003", "DEX-001", "TEST-001"]
+    },
+    {
+      "id": "phase-3",
+      "name": "DeFi Integration & Frontend",
+      "duration_weeks": 2,
+      "description": "Week 5-6: Chainlink Oracle, PancakeSwap, Venus, Next.js Frontend, PSM/veNFT/Voting UI, Analytics, Performance",
+      "status": "pending",
+      "task_ids": ["DEFI-001", "DEFI-002", "DEFI-003", "FE-001", "FE-002", "FE-003", "FE-004", "FE-005", "FE-006"]
+    },
+    {
+      "id": "phase-4",
+      "name": "External Audit",
+      "duration_weeks": 1,
+      "description": "Week 7: Audit Firm Selection, Submission, Remediation, Bug Bounty Setup",
+      "status": "pending",
+      "task_ids": ["AUDIT-001", "AUDIT-002", "AUDIT-003", "SEC-002"]
+    },
+    {
+      "id": "phase-5",
+      "name": "Mainnet Deployment",
+      "duration_weeks": 1,
+      "description": "Week 8: Multi-Sig Setup, Contract Deployment, Liquidity Bootstrapping, Monitoring, Public Launch",
+      "status": "pending",
+      "task_ids": ["DEPLOY-001", "DEPLOY-002", "DEPLOY-003", "OPS-001", "MARKET-001"]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "CORE-001",
+      "title": "HYD Token Contract Implementation",
+      "description": "Implement BEP-20 compliant HYD token with mint/burn capabilities, blacklist, pausable, access control",
+      "phase": "phase-1",
+      "priority": "P0",
+      "complexity": 4,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["smart-contract", "token", "core"],
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Passes all OpenZeppelin ERC-20 test cases",
+        "Only PSM contract can mint/burn HYD",
+        "Pause and blacklist functions work correctly",
+        "Test coverage >95%",
+        "Gas optimization: <50K gas for transfer"
+      ],
+      "technical_notes": "Use OpenZeppelin ERC20Upgradeable, AccessControlUpgradeable, PausableUpgradeable. Immutable PSM address for gas optimization.",
+      "reference": "contracts/core/HYD.sol - .ultra/docs/tech.md#hyd-token"
+    },
+    {
+      "id": "CORE-002",
+      "title": "PSM (Peg Stability Module) Contract",
+      "description": "1:1 USDC↔HYD swap mechanism with 0.1% fees, mint cap (1M HYD initial), reserve monitoring",
+      "phase": "phase-1",
+      "priority": "P0",
+      "complexity": 7,
+      "estimated_days": 4,
+      "status": "pending",
+      "tags": ["smart-contract", "psm", "core", "defi"],
+      "dependencies": ["CORE-001"],
+      "acceptance_criteria": [
+        "1:1 swap ratio maintained (±0.1% fee)",
+        "maxMintedHYD cap enforced (initial: 1M HYD)",
+        "Reverts when USDC reserve insufficient",
+        "Fee calculation accurate to 1 wei",
+        "Events emitted for all state changes",
+        "Fuzz testing passes 100K iterations",
+        "Gas: <80K for swap"
+      ],
+      "technical_notes": "Reference Venus PSM (.ultra/docs/research). Use immutable HYD/USDC addresses. ReentrancyGuard. Fee precision: 10000 basis points (0.1% = 10 bp).",
+      "reference": ".ultra/docs/decisions/ADR-001-bsc-native-rwa-tokens.md#psm-core-contract"
+    },
+    {
+      "id": "CORE-003",
+      "title": "VotingEscrow (veNFT) Contract",
+      "description": "Lock HYD (1 week to 4 years) → receive ERC-721 veNFT with linear decay voting power",
+      "phase": "phase-1",
+      "priority": "P0",
+      "complexity": 8,
+      "estimated_days": 5,
+      "status": "pending",
+      "tags": ["smart-contract", "governance", "ve33", "core"],
+      "dependencies": ["CORE-001"],
+      "acceptance_criteria": [
+        "Lock duration: 1 week (MIN) to 4 years (MAX)",
+        "Voting power = amount × (lockDuration / 4 years)",
+        "4 years → 2.0x weight, 1 year → 1.0x, 1 week → 0.05x",
+        "Storage packing saves ≥4200 gas per query",
+        "Cannot withdraw before expiry",
+        "NFT transferable but voting power non-transferable",
+        "Test coverage >95%"
+      ],
+      "technical_notes": "Use uint128 for amount (sufficient for 3.4e20), uint64 for timestamp. Reference Curve veToken and Velodrome veNFT. Implement checkpoint system. See .ultra/docs/research#gas-optimization.",
+      "reference": ".ultra/docs/tech.md#votingescrow-venft"
+    },
+    {
+      "id": "CORE-004",
+      "title": "PAIMON Token Contract",
+      "description": "Platform utility token with emissions control (10B max supply), buyback/burn mechanism",
+      "phase": "phase-1",
+      "priority": "P1",
+      "complexity": 5,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["smart-contract", "token", "governance"],
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Max supply: 10B PAIMON",
+        "Only authorized contracts can mint (MINTER_ROLE)",
+        "Burn reduces totalSupply permanently",
+        "Test coverage >90%"
+      ],
+      "technical_notes": "Use OpenZeppelin ERC20Capped. Implement role-based minting for GaugeController.",
+      "reference": ".ultra/docs/prd.md#paimon-token"
+    },
+    {
+      "id": "INFRA-001",
+      "title": "Hardhat + Foundry Development Environment Setup",
+      "description": "Configure BSC testnet/mainnet, deploy scripts, testing framework, CI/CD",
+      "phase": "phase-1",
+      "priority": "P0",
+      "complexity": 3,
+      "estimated_days": 1,
+      "status": "in_progress",
+      "tags": ["infrastructure", "devops"],
+      "dependencies": [],
+      "started_at": "2025-10-24T19:15:00Z",
+      "acceptance_criteria": [
+        "hardhat.config.ts configured for BSC networks (testnet 97, mainnet 56)",
+        "forge test runs successfully",
+        "Deploy script works on BSC testnet",
+        "Contract verification on BscScan works",
+        "CI runs tests on every commit (GitHub Actions)"
+      ],
+      "technical_notes": "BSC testnet RPC: https://data-seed-prebsc-1-s1.binance.org:8545/, mainnet: https://bsc-dataseed.binance.org/. Gas price: 3 Gwei. Use dotenv for private keys. Reference ADR-001 for config.",
+      "reference": ".ultra/docs/decisions/ADR-001-bsc-native-rwa-tokens.md#bsc-deployment-config"
+    },
+    {
+      "id": "SEC-001",
+      "title": "Internal Security Audit (Slither, Mythril)",
+      "description": "Run automated security tools and fix Critical/High issues before external audit",
+      "phase": "phase-1",
+      "priority": "P0",
+      "complexity": 4,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["security", "audit"],
+      "dependencies": ["CORE-001", "CORE-002", "CORE-003", "CORE-004"],
+      "acceptance_criteria": [
+        "Zero Critical issues from Slither",
+        "Zero High issues from Slither",
+        "Mythril finds no exploitable vulnerabilities",
+        "All findings documented in .ultra/docs/security/"
+      ],
+      "technical_notes": "Run slither . --filter-paths 'node_modules|test'. For Mythril: myth analyze contracts/*.sol --execution-timeout 300. Reference Thena audit learnings.",
+      "reference": ".ultra/docs/research#thena-audit-findings"
+    },
+    {
+      "id": "GOV-001",
+      "title": "GaugeController Contract",
+      "description": "Manage liquidity pool gauges, batch vote weight allocation, epoch-based voting (7-day cycles)",
+      "phase": "phase-2",
+      "priority": "P0",
+      "complexity": 9,
+      "estimated_days": 5,
+      "status": "pending",
+      "tags": ["smart-contract", "governance", "ve33", "core"],
+      "dependencies": ["CORE-003"],
+      "acceptance_criteria": [
+        "Batch voting saves ≥84,000 gas vs individual votes",
+        "Epoch advances automatically every 7 days",
+        "Vote weight = veNFT voting power × user allocation %",
+        "Events emit all vote changes (not stored for gas savings)",
+        "Cannot vote for same gauge twice in one epoch",
+        "Test coverage >95%"
+      ],
+      "technical_notes": "Reference Curve GaugeController and Velodrome Voter. Use unchecked { ++i } in loops. Emit VoteEvent(user, gauge, weight, epoch) instead of storing history. See .ultra/docs/research#gas-optimization.",
+      "reference": ".ultra/docs/tech.md#gaugecontroller"
+    },
+    {
+      "id": "GOV-002",
+      "title": "RewardDistributor Contract",
+      "description": "Distribute protocol fees (70% of swap fees) to veNFT holders based on voting power via Merkle tree",
+      "phase": "phase-2",
+      "priority": "P0",
+      "complexity": 7,
+      "estimated_days": 4,
+      "status": "pending",
+      "tags": ["smart-contract", "governance", "rewards"],
+      "dependencies": ["CORE-003", "GOV-001"],
+      "acceptance_criteria": [
+        "Rewards proportional to voting power at snapshot",
+        "Merkle proof verification gas <50K",
+        "Supports multiple reward tokens (USDC, PAIMON, HYD)",
+        "Unclaimed rewards roll over to next epoch",
+        "Test coverage >90%"
+      ],
+      "technical_notes": "Use OpenZeppelin MerkleProof library. Off-chain Merkle tree generation script. Consider Uniswap V3 Merkle distributor pattern.",
+      "reference": ".ultra/docs/prd.md#revenue-distribution"
+    },
+    {
+      "id": "GOV-003",
+      "title": "BribeMarketplace Contract",
+      "description": "Allow protocols to bribe veNFT holders for gauge votes (2% fee to treasury)",
+      "phase": "phase-2",
+      "priority": "P1",
+      "complexity": 7,
+      "estimated_days": 3,
+      "status": "pending",
+      "tags": ["smart-contract", "governance", "marketplace"],
+      "dependencies": ["GOV-001"],
+      "acceptance_criteria": [
+        "Bribe distributed proportionally to votes",
+        "2% fee collected correctly",
+        "Only whitelisted tokens accepted",
+        "Cannot claim bribe for unvoted gauge",
+        "Test coverage >90%"
+      ],
+      "technical_notes": "Reference Thena Finance BribeMarket. Consider Hidden Hand's bribe marketplace for UX patterns.",
+      "reference": ".ultra/docs/prd.md#bribe-market"
+    },
+    {
+      "id": "DEX-001",
+      "title": "DEX Core (AMM) Contract",
+      "description": "Uniswap V2-style AMM with 0.25% swap fees (70% to voters, 30% to treasury)",
+      "phase": "phase-2",
+      "priority": "P0",
+      "complexity": 8,
+      "estimated_days": 5,
+      "status": "pending",
+      "tags": ["smart-contract", "dex", "defi", "core"],
+      "dependencies": ["CORE-001"],
+      "acceptance_criteria": [
+        "0.25% total fee on swaps",
+        "Fee split accurate to 1 wei (0.175% voters, 0.075% treasury)",
+        "No arbitrage opportunity from fee calculation",
+        "Slippage protection works",
+        "Fuzz testing passes 100K iterations",
+        "Test coverage >95%"
+      ],
+      "technical_notes": "Fork Uniswap V2 core contracts. Fee precision: 10000 basis points. Use ReentrancyGuard on all state-changing functions.",
+      "reference": ".ultra/docs/prd.md#ve33-dex"
+    },
+    {
+      "id": "TEST-001",
+      "title": "Invariant Testing Suite (Foundry)",
+      "description": "Property-based testing for all core contracts (PSM, veNFT, GaugeController, DEX)",
+      "phase": "phase-2",
+      "priority": "P0",
+      "complexity": 7,
+      "estimated_days": 3,
+      "status": "pending",
+      "tags": ["testing", "security", "qa"],
+      "dependencies": ["CORE-001", "CORE-002", "CORE-003", "GOV-001", "GOV-002", "DEX-001"],
+      "acceptance_criteria": [
+        "All invariants hold after 100K random actions",
+        "No overflow/underflow detected",
+        "No state corruption found",
+        "Documented in .ultra/docs/testing/"
+      ],
+      "technical_notes": "Use Foundry's invariant testing framework. Run with --runs 100000. Example: invariant_psmReserveAlwaysCoversSupply(). Cover PSM (1:1 peg, reserve >= totalMinted), veNFT (voting power <= locked HYD), GaugeController (total weight = 100%), DEX (k value, fee accounting).",
+      "reference": ".ultra/docs/research#testing-strategy"
+    },
+    {
+      "id": "DEFI-001",
+      "title": "Chainlink Oracle Integration",
+      "description": "Price feeds for HYD, USDC, USDT, BNB on BSC with dual-oracle validation (Chainlink + Pyth)",
+      "phase": "phase-3",
+      "priority": "P0",
+      "complexity": 5,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["smart-contract", "oracle", "infrastructure"],
+      "dependencies": ["CORE-001"],
+      "acceptance_criteria": [
+        "USDC/USD, USDT/USD, BNB/USD feeds work on BSC",
+        "Price deviation >5% triggers circuit breaker",
+        "Falls back to Pyth if Chainlink fails",
+        "Price staleness check (<1 hour)",
+        "Test coverage >90%"
+      ],
+      "technical_notes": "BSC Chainlink feeds: USDC/USD 0x51597f405303C4377E36123cBc172b13269EA163, BNB/USD 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE. Use AggregatorV3Interface.",
+      "reference": ".ultra/docs/research#chainlink-oracle"
+    },
+    {
+      "id": "DEFI-002",
+      "title": "PancakeSwap V2 Router Integration",
+      "description": "Deploy HYD/USDC pool on PancakeSwap and provide initial liquidity ($100K USDC)",
+      "phase": "phase-3",
+      "priority": "P0",
+      "complexity": 4,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["defi", "integration", "liquidity"],
+      "dependencies": ["CORE-001", "DEX-001"],
+      "acceptance_criteria": [
+        "HYD/USDC pool created on PancakeSwap",
+        "Initial liquidity deposited successfully",
+        "Swap functionality works in frontend",
+        "Price impact <2% for $10K swaps"
+      ],
+      "technical_notes": "PancakeSwap V2 Router: 0x10ED43C718714eb63d5aA57B78B54704E256024E. Use addLiquidity() and swapExactTokensForTokens().",
+      "reference": ".ultra/docs/research#pancakeswap-integration"
+    },
+    {
+      "id": "DEFI-003",
+      "title": "Venus Protocol Collateral Application",
+      "description": "Apply for HYD to be whitelisted as Venus collateral (target: 65% collateral factor)",
+      "phase": "phase-3",
+      "priority": "P2",
+      "complexity": 6,
+      "estimated_days": 3,
+      "status": "pending",
+      "tags": ["defi", "integration", "governance"],
+      "dependencies": ["CORE-001", "DEFI-001", "DEFI-002"],
+      "acceptance_criteria": [
+        "Proposal submitted to Venus governance",
+        "Risk assessment approved by Venus team",
+        "Proposal passes community vote (if applicable)",
+        "HYD added to Venus market"
+      ],
+      "technical_notes": "Venus governance: https://community.venus.io. Prepare liquidity data, market cap, oracle setup. Typical timeline: 2-4 weeks for approval.",
+      "reference": ".ultra/docs/research#venus-integration"
+    },
+    {
+      "id": "FE-001",
+      "title": "Next.js 14 Frontend Setup",
+      "description": "App Router, TypeScript, wagmi v2, Material-UI v5, warm color theme, i18n (EN+CN)",
+      "phase": "phase-3",
+      "priority": "P0",
+      "complexity": 5,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["frontend", "ui", "infrastructure"],
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Next.js 14 runs in dev mode",
+        "Wallet connection works (MetaMask, Trust Wallet)",
+        "BSC testnet and mainnet switching works",
+        "Material Design 3 compliance verified",
+        "Warm color palette (no blue/purple)",
+        "English and Chinese translations work"
+      ],
+      "technical_notes": "Use create-next-app with TypeScript. wagmi config: chains: [bsc, bscTestnet], transports: http(). MUI theme: warm palette (orange, amber, brown).",
+      "reference": ".ultra/docs/tech.md#frontend-stack"
+    },
+    {
+      "id": "FE-002",
+      "title": "PSM Swap UI Component",
+      "description": "1:1 USDC↔HYD swap interface with fee display (0.1%), real-time balance updates",
+      "phase": "phase-3",
+      "priority": "P0",
+      "complexity": 6,
+      "estimated_days": 3,
+      "status": "pending",
+      "tags": ["frontend", "ui", "defi"],
+      "dependencies": ["CORE-002", "FE-001"],
+      "acceptance_criteria": [
+        "User can swap USDC for HYD and vice versa",
+        "Fee calculation displayed accurately",
+        "Transaction success/failure shown clearly",
+        "Works on mobile (responsive)",
+        "LCP <2.5s, FID <100ms, CLS <0.1",
+        "E2E test coverage >80%"
+      ],
+      "technical_notes": "Use wagmi useWriteContract for swapUSDCForHYD/swapHYDForUSDC. Display maxMintedHYD cap. Show HYD price from Chainlink oracle.",
+      "reference": ".ultra/docs/tech.md#psm-ui"
+    },
+    {
+      "id": "FE-003",
+      "title": "veNFT Lock UI Component",
+      "description": "Lock HYD to receive veNFT with dynamic NFT visualization, voting power preview",
+      "phase": "phase-3",
+      "priority": "P0",
+      "complexity": 7,
+      "estimated_days": 3,
+      "status": "pending",
+      "tags": ["frontend", "ui", "governance"],
+      "dependencies": ["CORE-003", "FE-001"],
+      "acceptance_criteria": [
+        "User can lock HYD for 1 week to 4 years",
+        "Voting power formula displayed correctly",
+        "NFT image updates based on lock time",
+        "Works on mobile",
+        "Core Web Vitals pass",
+        "E2E test coverage >80%"
+      ],
+      "technical_notes": "Use MUI Slider for duration. Voting power = amount × (duration / 4 years). Generate NFT image on-chain or use IPFS metadata.",
+      "reference": ".ultra/docs/tech.md#venft-ui"
+    },
+    {
+      "id": "FE-004",
+      "title": "Governance Voting UI",
+      "description": "Batch voting interface for liquidity pool gauges with allocation %, epoch countdown, weight visualization",
+      "phase": "phase-3",
+      "priority": "P1",
+      "complexity": 7,
+      "estimated_days": 3,
+      "status": "pending",
+      "tags": ["frontend", "ui", "governance"],
+      "dependencies": ["GOV-001", "FE-001"],
+      "acceptance_criteria": [
+        "User can allocate voting power across gauges",
+        "Batch voting in one transaction works",
+        "Epoch timer accurate",
+        "Cannot over-allocate voting power",
+        "E2E test coverage >75%"
+      ],
+      "technical_notes": "Use GaugeController.batchVote([gauge1, gauge2], [weight1, weight2]). Total weight must = 100%. Show APR estimates from bribes.",
+      "reference": ".ultra/docs/tech.md#governance-ui"
+    },
+    {
+      "id": "FE-005",
+      "title": "Analytics Dashboard",
+      "description": "Protocol metrics: TVL, 24h volume, HYD price chart, veNFT APR calculator (The Graph subgraph + Recharts)",
+      "phase": "phase-3",
+      "priority": "P1",
+      "complexity": 6,
+      "estimated_days": 3,
+      "status": "pending",
+      "tags": ["frontend", "analytics", "subgraph"],
+      "dependencies": ["FE-001"],
+      "acceptance_criteria": [
+        "TVL displayed accurately (±1%)",
+        "24h volume updates every 5 minutes",
+        "HYD price shown with $1 reference line",
+        "APR calculation includes bribes + fees",
+        "Charts render on mobile"
+      ],
+      "technical_notes": "The Graph Studio for BSC. Query TVL = PSM.totalMinted + DEX.totalLiquidity. Use Recharts for data visualization.",
+      "reference": ".ultra/docs/tech.md#analytics"
+    },
+    {
+      "id": "FE-006",
+      "title": "Performance Optimization (Core Web Vitals)",
+      "description": "LCP <2.5s, FID <100ms, CLS <0.1 via image optimization, code splitting, lazy loading",
+      "phase": "phase-3",
+      "priority": "P0",
+      "complexity": 6,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["frontend", "performance", "optimization"],
+      "dependencies": ["FE-002", "FE-003", "FE-004", "FE-005"],
+      "acceptance_criteria": [
+        "LCP <2.5s on 4G connection",
+        "FID <100ms for all interactions",
+        "CLS <0.1 (no layout shift)",
+        "Lighthouse score >90",
+        "Bundle size <500KB initial"
+      ],
+      "technical_notes": "Use next/dynamic for heavy components. Preload critical fonts. Optimize images with WebP format. Run Lighthouse in CI on every PR.",
+      "reference": ".ultra/docs/research#core-web-vitals"
+    },
+    {
+      "id": "AUDIT-001",
+      "title": "Audit Firm Selection",
+      "description": "RFP to 3+ audit firms (CertiK, OpenZeppelin, Consensys), compare proposals, sign contract",
+      "phase": "phase-4",
+      "priority": "P0",
+      "complexity": 3,
+      "estimated_days": 1,
+      "status": "pending",
+      "tags": ["audit", "security", "procurement"],
+      "dependencies": ["SEC-001"],
+      "acceptance_criteria": [
+        "3+ audit proposals received",
+        "Audit cost: $30K-50K range",
+        "Timeline: 2-3 weeks",
+        "Contract signed"
+      ],
+      "technical_notes": "Preferred: CertiK (BSC experience) or OpenZeppelin (ve33 expertise). Budget: $30K-50K. Include PSM, VotingEscrow, GaugeController, DEX core.",
+      "reference": ".ultra/docs/research#audit-strategy"
+    },
+    {
+      "id": "AUDIT-002",
+      "title": "Audit Submission Package",
+      "description": "Prepare code freeze (v0.1.0-audit), NatSpec docs, architecture diagram, threat model, test coverage >95%",
+      "phase": "phase-4",
+      "priority": "P0",
+      "complexity": 4,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["audit", "documentation"],
+      "dependencies": ["AUDIT-001"],
+      "acceptance_criteria": [
+        "All contracts have NatSpec comments",
+        "Architecture diagram shows all interactions",
+        "Threat model covers 10+ attack vectors",
+        "Test coverage >95% for audited contracts",
+        "Submission package sent to auditors"
+      ],
+      "technical_notes": "Use solidity-docgen for NatSpec. Threat model: reentrancy, oracle manipulation, access control, economic attacks. Tag: git tag -a v0.1.0-audit.",
+      "reference": ".ultra/docs/research#audit-preparation"
+    },
+    {
+      "id": "AUDIT-003",
+      "title": "Audit Remediation",
+      "description": "Fix all Critical/High/Medium findings from audit report, re-test, re-submit for verification",
+      "phase": "phase-4",
+      "priority": "P0",
+      "complexity": 8,
+      "estimated_days": 4,
+      "status": "pending",
+      "tags": ["audit", "security", "remediation"],
+      "dependencies": ["AUDIT-002"],
+      "acceptance_criteria": [
+        "Zero Critical findings remaining",
+        "Zero High findings remaining",
+        "<3 Medium findings (accepted by auditors)",
+        "All fixes verified by auditors",
+        "Final audit report published"
+      ],
+      "technical_notes": "Typical findings: reentrancy, access control, oracle manipulation, economic attacks. Reference Thena Finance audit (1 Critical found). Timeline: 3-5 days for remediation.",
+      "reference": ".ultra/docs/research#thena-audit-findings"
+    },
+    {
+      "id": "SEC-002",
+      "title": "Bug Bounty Program Setup (ImmuneFi)",
+      "description": "Launch ongoing bug bounty with $10K-100K rewards (Critical $100K, High $50K, Medium $10K)",
+      "phase": "phase-4",
+      "priority": "P1",
+      "complexity": 4,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["security", "bug-bounty", "community"],
+      "dependencies": ["AUDIT-003"],
+      "acceptance_criteria": [
+        "ImmuneFi program live",
+        "Scope covers all core contracts",
+        "Rewards funded in multi-sig wallet",
+        "Announced to community"
+      ],
+      "technical_notes": "ImmuneFi standard rewards: Critical $100K, High $50K, Medium $10K, Low $1K. Exclude frontend bugs. Timeline for payouts: <30 days.",
+      "reference": ".ultra/docs/research#bug-bounty-strategy"
+    },
+    {
+      "id": "DEPLOY-001",
+      "title": "Multi-Sig Wallet Setup",
+      "description": "Deploy Gnosis Safe on BSC: 3-of-5 for Treasury, 4-of-7 for Emergency Pause",
+      "phase": "phase-5",
+      "priority": "P0",
+      "complexity": 5,
+      "estimated_days": 1,
+      "status": "pending",
+      "tags": ["security", "governance", "infrastructure"],
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Treasury multi-sig: 3-of-5 threshold",
+        "Emergency multi-sig: 4-of-7 threshold",
+        "Test transaction executed successfully",
+        "All signers verified (hardware wallets)"
+      ],
+      "technical_notes": "Use Gnosis Safe on BSC. Require hardware wallets (Ledger/Trezor) for all signers. Document recovery procedures.",
+      "reference": ".ultra/docs/tech.md#multi-sig-setup"
+    },
+    {
+      "id": "DEPLOY-002",
+      "title": "Mainnet Contract Deployment",
+      "description": "Deploy all contracts to BSC mainnet: HYD, PAIMON, PSM, veNFT, GaugeController, DEX, Oracle. Transfer ownership to multi-sigs.",
+      "phase": "phase-5",
+      "priority": "P0",
+      "complexity": 7,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["deployment", "mainnet"],
+      "dependencies": ["AUDIT-003", "DEPLOY-001"],
+      "acceptance_criteria": [
+        "All contracts deployed successfully",
+        "All contracts verified on BscScan",
+        "Ownership transferred to multi-sigs",
+        "No deployment errors or reverts",
+        "Deployment addresses documented"
+      ],
+      "technical_notes": "Deployment order: 1) Tokens 2) PSM 3) veNFT 4) Governance 5) DEX 6) Oracle. Use deployment script with verification. Gas price: 3-5 Gwei. See ADR-001 for BSC config.",
+      "reference": ".ultra/docs/decisions/ADR-001-bsc-native-rwa-tokens.md#deployment-strategy"
+    },
+    {
+      "id": "DEPLOY-003",
+      "title": "Initial Liquidity Bootstrapping",
+      "description": "Deposit $100K USDC to PSM reserve, mint 50K HYD, add liquidity to HYD/USDC pool on PancakeSwap, monitor first 24h",
+      "phase": "phase-5",
+      "priority": "P0",
+      "complexity": 6,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["deployment", "liquidity", "operations"],
+      "dependencies": ["DEPLOY-002"],
+      "acceptance_criteria": [
+        "$100K USDC deposited to PSM",
+        "50K HYD minted and added to PancakeSwap",
+        "HYD price stable around $1 (±2%)",
+        "No arbitrage exploits detected",
+        "Initial trading volume >$10K"
+      ],
+      "technical_notes": "Initial price: 1 HYD = 1 USDC. Monitor Chainlink oracle. Set maxMintedHYD = 1M HYD. Reserve ratio: 2:1 (reserve >= 2× minted).",
+      "reference": ".ultra/docs/research#liquidity-bootstrapping"
+    },
+    {
+      "id": "OPS-001",
+      "title": "Monitoring & Alerting Setup",
+      "description": "Configure Tenderly (contract events), Dune Analytics (TVL dashboard), PagerDuty (oracle deviation, large withdrawals), Discord bot",
+      "phase": "phase-5",
+      "priority": "P0",
+      "complexity": 6,
+      "estimated_days": 2,
+      "status": "pending",
+      "tags": ["operations", "monitoring", "infrastructure"],
+      "dependencies": ["DEPLOY-002"],
+      "acceptance_criteria": [
+        "Tenderly monitors all core contracts",
+        "Dune dashboard shows real-time TVL",
+        "PagerDuty alerts on Critical events (±5% oracle deviation)",
+        "Discord bot sends alerts to team channel",
+        "Test alert triggered successfully"
+      ],
+      "technical_notes": "Tenderly: monitor Pause events, large transfers (>$10K). Dune: query TVL = PSM reserve + DEX liquidity. PagerDuty: email + SMS alerts for on-call team.",
+      "reference": ".ultra/docs/tech.md#monitoring-strategy"
+    },
+    {
+      "id": "MARKET-001",
+      "title": "Public Launch Announcement",
+      "description": "Press release, Twitter thread, Discord event, user documentation (How to swap/lock/vote), website update with mainnet contracts",
+      "phase": "phase-5",
+      "priority": "P1",
+      "complexity": 5,
+      "estimated_days": 1,
+      "status": "pending",
+      "tags": ["marketing", "community", "documentation"],
+      "dependencies": ["DEPLOY-003", "OPS-001"],
+      "acceptance_criteria": [
+        "Press release published on Medium/Mirror",
+        "Twitter thread gets >100 retweets",
+        "Discord community >500 members",
+        "User documentation live on website",
+        "Website shows mainnet contract addresses"
+      ],
+      "technical_notes": "Announce: 1) Audit report link 2) Bug bounty 3) Initial liquidity 4) Roadmap. User docs: screenshots, video tutorials (EN + CN).",
+      "reference": ".ultra/docs/prd.md#launch-strategy"
+    }
+  ],
+  "risk_assessment": {
+    "high_risks": [
+      {
+        "risk": "External audit may find Critical issues requiring architecture changes",
+        "task_id": "AUDIT-003",
+        "impact": "High - may delay mainnet launch by 2-4 weeks",
+        "probability": "Medium (25%)",
+        "mitigation": "Reserve 2 weeks buffer time after audit for major refactoring. Reference Thena Finance audit (1 Critical found) for similar issues."
+      },
+      {
+        "risk": "Venus Protocol governance vote may reject HYD collateral listing",
+        "task_id": "DEFI-003",
+        "impact": "Medium - reduces HYD utility but not critical path",
+        "probability": "Medium (30%)",
+        "mitigation": "Prepare alternative DeFi integrations if Venus rejects (Alpaca Finance, Radiant Capital)."
+      },
+      {
+        "risk": "Initial liquidity may be insufficient to maintain HYD peg",
+        "task_id": "DEPLOY-003",
+        "impact": "High - peg instability damages protocol credibility",
+        "probability": "Low (15%)",
+        "mitigation": "Implement dynamic fee adjustment if HYD deviates >2% from $1. Treasury ready for emergency buyback/sell operations."
+      }
+    ],
+    "medium_risks": [
+      {
+        "risk": "Chainlink oracle integration may have latency issues on BSC",
+        "task_id": "DEFI-001",
+        "impact": "Medium - may affect price accuracy",
+        "probability": "Low (10%)",
+        "mitigation": "Use dual oracle (Chainlink + Pyth) for redundancy. Circuit breaker triggers at ±5% deviation."
+      },
+      {
+        "risk": "Frontend Core Web Vitals may not meet targets on first attempt",
+        "task_id": "FE-006",
+        "impact": "Low - user experience degradation",
+        "probability": "Medium (20%)",
+        "mitigation": "Implement progressive enhancement. Allocate extra time for performance optimization iterations."
+      },
+      {
+        "risk": "The Graph subgraph indexing may lag during high activity",
+        "task_id": "FE-005",
+        "impact": "Low - analytics dashboard shows stale data",
+        "probability": "Medium (20%)",
+        "mitigation": "Prepare fallback RPC nodes if The Graph has issues. Consider self-hosted subgraph for critical metrics."
+      }
+    ]
+  },
+  "execution_roadmap": {
+    "week1-2": {
+      "phase": "phase-1",
+      "focus": "Core Contracts Development",
+      "tasks": ["CORE-001", "CORE-002", "CORE-003", "CORE-004", "INFRA-001", "SEC-001"],
+      "milestone": "All core contracts deployed to BSC Testnet with >95% test coverage and zero Critical/High security issues"
+    },
+    "week3-4": {
+      "phase": "phase-2",
+      "focus": "ve33 Governance Layer",
+      "tasks": ["GOV-001", "GOV-002", "GOV-003", "DEX-001", "TEST-001"],
+      "milestone": "Governance contracts functional with batch voting, bribe marketplace, and DEX with invariant testing completed"
+    },
+    "week5-6": {
+      "phase": "phase-3",
+      "focus": "DeFi Integration & Frontend",
+      "tasks": ["DEFI-001", "DEFI-002", "DEFI-003", "FE-001", "FE-002", "FE-003", "FE-004", "FE-005", "FE-006"],
+      "milestone": "PancakeSwap integration live, Chainlink oracles working, full frontend with swap/lock/vote/analytics UI passing Core Web Vitals"
+    },
+    "week7": {
+      "phase": "phase-4",
+      "focus": "External Audit",
+      "tasks": ["AUDIT-001", "AUDIT-002", "AUDIT-003", "SEC-002"],
+      "milestone": "Audit report finalized with zero Critical/High findings, bug bounty program launched on ImmuneFi"
+    },
+    "week8": {
+      "phase": "phase-5",
+      "focus": "Mainnet Deployment",
+      "tasks": ["DEPLOY-001", "DEPLOY-002", "DEPLOY-003", "OPS-001", "MARKET-001"],
+      "milestone": "BSC mainnet deployment complete with $100K initial liquidity, monitoring active, public launch announced"
+    }
+  },
+  "success_metrics": {
+    "technical": {
+      "test_coverage": ">95% for smart contracts, >80% for frontend",
+      "audit_findings": "Zero Critical, Zero High severity issues",
+      "gas_optimization": "PSM swap <80K gas, veNFT query with storage packing saves 4200 gas, batch voting saves 84,000 gas",
+      "core_web_vitals": "LCP <2.5s, FID <100ms, CLS <0.1",
+      "deployment_time": "8 weeks from start to mainnet launch"
+    },
+    "business": {
+      "initial_tvl": "$100K USDC (PSM reserve + PancakeSwap liquidity)",
+      "hyd_peg_stability": "±2% from $1 for first 30 days",
+      "user_onboarding": ">100 unique wallets in first week",
+      "community_engagement": ">500 Discord members at launch",
+      "protocol_revenue": ">$300/day at $1M daily volume (target: 6 months)"
+    }
+  }
 }
