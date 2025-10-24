@@ -223,9 +223,10 @@
       "priority": "P0",
       "complexity": 9,
       "estimated_days": 5,
-      "status": "pending",
+      "status": "in_progress",
       "tags": ["smart-contract", "governance", "ve33", "core"],
       "dependencies": ["CORE-003"],
+      "started_at": "2025-10-25T02:30:00Z",
       "acceptance_criteria": [
         "Batch voting saves ≥84,000 gas vs individual votes",
         "Epoch advances automatically every 7 days",

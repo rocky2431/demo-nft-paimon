@@ -172,7 +172,6 @@ contract VotingEscrow is ERC721, ReentrancyGuard {
         uint256 newUnlockTime = block.timestamp + _lockDuration;
         require(newUnlockTime > _locked.end, "New unlock time must be greater");
 
-        uint256 oldEnd = _locked.end;
         _locked.end = uint128(newUnlockTime);
 
         emit Deposit(msg.sender, _tokenId, 0, newUnlockTime, 2);
