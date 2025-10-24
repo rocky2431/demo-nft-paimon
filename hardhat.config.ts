@@ -13,7 +13,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 1000, // Increased for runtime gas optimization (transfer is called frequently)
       },
       viaIR: true, // Enable Yul IR-based code generation for better optimization
     },
