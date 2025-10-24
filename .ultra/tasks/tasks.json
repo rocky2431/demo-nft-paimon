@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "version": "3.1.0",
+    "project_name": "demo-nft-paimon",
+    "created": "2025-10-24T18:26:00Z",
+    "last_updated": "2025-10-24T18:26:00Z"
+  },
+  "stats": {
+    "total": 0,
+    "pending": 0,
+    "in_progress": 0,
+    "blocked": 0,
+    "completed": 0,
+    "cancelled": 0
+  },
+  "tasks": []
+}
