@@ -11,8 +11,8 @@
   },
   "stats": {
     "total": 29,
-    "pending": 20,
-    "in_progress": 0,
+    "pending": 19,
+    "in_progress": 1,
     "blocked": 0,
     "completed": 5,
     "cancelled": 0,
@@ -200,9 +200,10 @@
       "priority": "P0",
       "complexity": 4,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "in_progress",
       "tags": ["security", "audit"],
       "dependencies": ["CORE-001", "CORE-002", "CORE-003", "CORE-004"],
+      "started_at": "2025-10-25T01:15:00Z",
       "acceptance_criteria": [
         "Zero Critical issues from Slither",
         "Zero High issues from Slither",
