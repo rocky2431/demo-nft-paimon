@@ -36,15 +36,15 @@ typechain/
 typechain-types/
 
 # Hardhat
-hardhat.config.ts
-hardhat.config.js
 cache/
 artifacts/
+cache_hardhat/
 
 # Foundry
 out/
-cache/
+cache_forge/
 broadcast/
+lib/
 
 # IDEs
 .vscode/
