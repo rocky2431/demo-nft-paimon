@@ -231,8 +231,8 @@ contract PriceOracle is Ownable, ReentrancyGuard {
         // Both work - validate deviation
         uint256 deviation = _calculateDeviation(chainlinkPrice, pythPrice);
 
-        // Check if circuit breaker should trip
-        if (deviation > deviationThreshold) {
+        // Check if circuit breaker should trip (>= threshold, not just >)
+        if (deviation >= deviationThreshold) {
             // Trip circuit breaker
             if (!cbState.isTripped) {
                 cbState.isTripped = true;
