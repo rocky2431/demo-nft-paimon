@@ -30,6 +30,26 @@ export enum AddLiquidityState {
 }
 
 /**
+ * State machine for remove liquidity flow
+ */
+export enum RemoveLiquidityState {
+  /** Initial state - waiting for user input */
+  IDLE = 'IDLE',
+  /** LP token needs approval */
+  NEEDS_APPROVAL = 'NEEDS_APPROVAL',
+  /** Approving LP token */
+  APPROVING = 'APPROVING',
+  /** Ready to remove liquidity */
+  READY = 'READY',
+  /** Removing liquidity transaction in progress */
+  REMOVING = 'REMOVING',
+  /** Successfully removed liquidity */
+  SUCCESS = 'SUCCESS',
+  /** Error occurred */
+  ERROR = 'ERROR',
+}
+
+/**
  * Pool types (Velodrome-style)
  */
 export enum PoolType {
@@ -175,3 +195,82 @@ export interface AddLiquidityParams {
   to: `0x${string}`;
   deadline: bigint;
 }
+
+// ==================== Remove Liquidity Types ====================
+
+/**
+ * Remove liquidity form data
+ */
+export interface RemoveLiquidityFormData {
+  /** Selected pool */
+  pool: LiquidityPool | null;
+  /** LP token balance */
+  lpBalance: bigint;
+  /** LP token balance (formatted) */
+  lpBalanceFormatted: string;
+  /** Percentage to remove (0-100) */
+  percentage: number;
+  /** LP tokens to burn */
+  lpTokens: bigint;
+  /** LP tokens to burn (formatted) */
+  lpTokensFormatted: string;
+  /** Slippage tolerance (in basis points) */
+  slippageBps: number;
+  /** Transaction deadline (in minutes) */
+  deadlineMinutes: number;
+}
+
+/**
+ * Remove liquidity preview data
+ */
+export interface RemoveLiquidityPreview {
+  /** Amount of token0 to receive */
+  amount0: bigint;
+  /** Amount of token0 to receive (formatted) */
+  amount0Formatted: string;
+  /** Amount of token1 to receive */
+  amount1: bigint;
+  /** Amount of token1 to receive (formatted) */
+  amount1Formatted: string;
+  /** Minimum amount of token0 (with slippage) */
+  amount0Min: bigint;
+  /** Minimum amount of token1 (with slippage) */
+  amount1Min: bigint;
+  /** Pool share percentage after removal */
+  remainingShare: number;
+  /** Price of token0 in terms of token1 */
+  priceToken0: string;
+  /** Price of token1 in terms of token0 */
+  priceToken1: string;
+}
+
+/**
+ * Remove liquidity result
+ */
+export interface RemoveLiquidityResult {
+  /** Transaction hash */
+  hash: `0x${string}`;
+  /** Actual amount of token0 received */
+  amount0: bigint;
+  /** Actual amount of token1 received */
+  amount1: bigint;
+}
+
+/**
+ * Router remove liquidity parameters
+ */
+export interface RemoveLiquidityParams {
+  tokenA: `0x${string}`;
+  tokenB: `0x${string}`;
+  stable: boolean;
+  liquidity: bigint;
+  amountAMin: bigint;
+  amountBMin: bigint;
+  to: `0x${string}`;
+  deadline: bigint;
+}
+
+/**
+ * Percentage preset options for remove liquidity
+ */
+export type RemovePercentagePreset = 25 | 50 | 75 | 100; // in percentage

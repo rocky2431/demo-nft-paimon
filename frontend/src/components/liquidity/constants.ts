@@ -333,3 +333,26 @@ export const ANIMATION_CONFIG = {
   /** OlympusDAO signature easing */
   EASE_OUT_EXPO: 'cubic-bezier(0.16, 1, 0.3, 1)',
 } as const;
+
+// ==================== Remove Liquidity Constants ====================
+
+/**
+ * Percentage presets for remove liquidity
+ */
+export const REMOVE_PERCENTAGE_PRESETS: number[] = [25, 50, 75, 100];
+
+/**
+ * Calculate amount to receive when removing liquidity
+ * @param liquidity - LP tokens to burn
+ * @param reserve - Pool reserve
+ * @param totalSupply - Total LP token supply
+ * @returns Amount of token to receive
+ */
+export const calculateRemoveAmount = (
+  liquidity: bigint,
+  reserve: bigint,
+  totalSupply: bigint
+): bigint => {
+  if (liquidity === 0n || reserve === 0n || totalSupply === 0n) return 0n;
+  return (liquidity * reserve) / totalSupply;
+};
