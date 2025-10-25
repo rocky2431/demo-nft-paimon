@@ -204,8 +204,13 @@ contract PriceOracle is Ownable, ReentrancyGuard {
         CircuitBreakerState storage cbState = circuitBreakerState[feedId];
 
         // Try Chainlink first
-        (bool chainlinkSuccess, uint256 chainlinkPrice, uint256 chainlinkUpdatedAt) =
+        (bool chainlinkSuccess, uint256 chainlinkPrice, uint256 chainlinkUpdatedAt, bool isCriticalError) =
             _getChainlinkPrice(aggregator);
+
+        // If Chainlink had a critical error (e.g., negative price), revert immediately
+        if (isCriticalError) {
+            require(false, "Invalid Chainlink price");
+        }
 
         // Try Pyth
         (bool pythSuccess, uint256 pythPrice) = _getPythPrice(feedId);
@@ -270,11 +275,12 @@ contract PriceOracle is Ownable, ReentrancyGuard {
      * @return success Whether fetch succeeded
      * @return price Price normalized to 8 decimals
      * @return updatedAt Last update timestamp
+     * @return isCriticalError Whether error requires revert (not just fallback)
      */
     function _getChainlinkPrice(address aggregator)
         internal
         view
-        returns (bool success, uint256 price, uint256 updatedAt)
+        returns (bool success, uint256 price, uint256 updatedAt, bool isCriticalError)
     {
         try AggregatorV3Interface(aggregator).latestRoundData() returns (
             uint80 roundId,
@@ -283,22 +289,23 @@ contract PriceOracle is Ownable, ReentrancyGuard {
             uint256 updatedAt_,
             uint80 answeredInRound
         ) {
-            // Validate price - negative or zero prices are invalid
-            require(answer > 0, "Invalid Chainlink price");
+            // Check for negative price - this is a critical error that must revert
+            if (answer < 0) {
+                return (false, 0, 0, true);
+            }
 
-            // Validate round ID
-            require(roundId != 0, "Invalid round ID");
-
-            // Validate timestamp
-            require(updatedAt_ <= block.timestamp, "Future timestamp");
+            // Check for zero price or invalid round - return false for fallback
+            if (answer == 0 || roundId == 0 || updatedAt_ > block.timestamp) {
+                return (false, 0, 0, false);
+            }
 
             // Normalize to 8 decimals
             uint8 decimals = AggregatorV3Interface(aggregator).decimals();
             uint256 normalizedPrice = _normalizePrice(uint256(int256(answer)), decimals);
 
-            return (true, normalizedPrice, updatedAt_);
+            return (true, normalizedPrice, updatedAt_, false);
         } catch {
-            return (false, 0, 0);
+            return (false, 0, 0, false);
         }
     }
 
@@ -385,6 +392,13 @@ contract PriceOracle is Ownable, ReentrancyGuard {
         }
 
         uint256 diff = chainlinkPrice > pythPrice ? chainlinkPrice - pythPrice : pythPrice - chainlinkPrice;
+
+        // Check for overflow before multiplication
+        // If diff * BASIS_POINTS would overflow, deviation is definitely > threshold
+        if (diff > type(uint256).max / BASIS_POINTS) {
+            return type(uint256).max; // Massive deviation
+        }
+
         // Use Pyth as reference (denominator) for deviation calculation
         return (diff * BASIS_POINTS) / pythPrice;
     }
