@@ -226,9 +226,8 @@ contract PriceOracle is Ownable, ReentrancyGuard {
             return pythPrice;
         }
 
-        // If only Chainlink works, check staleness
+        // If only Chainlink works, use it (staleness already checked)
         if (chainlinkSuccess && !pythSuccess) {
-            _checkStaleness(chainlinkUpdatedAt);
             emit PriceReturned(feedId, chainlinkPrice, "Chainlink");
             return chainlinkPrice;
         }
@@ -259,8 +258,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
             }
         }
 
-        // Use Chainlink (primary)
-        _checkStaleness(chainlinkUpdatedAt);
+        // Use Chainlink (primary) - staleness already checked in _getChainlinkPrice
         emit PriceReturned(feedId, chainlinkPrice, "Chainlink");
         return chainlinkPrice;
     }
@@ -294,8 +292,13 @@ contract PriceOracle is Ownable, ReentrancyGuard {
                 return (false, 0, 0, true);
             }
 
-            // Check for zero price or invalid round - return false for fallback
+            // Check for zero price, invalid round, future timestamp, or stale data - return false for fallback
             if (answer == 0 || roundId == 0 || updatedAt_ > block.timestamp) {
+                return (false, 0, 0, false);
+            }
+
+            // Check staleness - if data is too old, fallback to Pyth
+            if (block.timestamp - updatedAt_ > stalenessThreshold) {
                 return (false, 0, 0, false);
             }
 
