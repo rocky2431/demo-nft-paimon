@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../core/VotingEscrow.sol";
+import "../interfaces/IGaugeControllerForBribes.sol";
 
 /**
  * @title GaugeController
@@ -35,7 +36,7 @@ import "../core/VotingEscrow.sol";
  * - veNFT ownership verification
  * - Allocation overflow protection
  */
-contract GaugeController is Ownable, ReentrancyGuard {
+contract GaugeController is IGaugeControllerForBribes, Ownable, ReentrancyGuard {
     /// @notice VotingEscrow contract for veNFT voting power
     VotingEscrow public immutable votingEscrow;
 

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./GaugeController.sol";
+import "../interfaces/IGaugeControllerForBribes.sol";
 
 /**
  * @title BribeMarketplace
@@ -41,7 +41,7 @@ contract BribeMarketplace is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @notice GaugeController contract for vote verification
-    GaugeController public immutable gaugeController;
+    IGaugeControllerForBribes public immutable gaugeController;
 
     /// @notice Treasury address for fee collection
     address public treasury;
@@ -102,7 +102,7 @@ contract BribeMarketplace is Ownable, ReentrancyGuard {
         require(_gaugeController != address(0), "Invalid gaugeController");
         require(_treasury != address(0), "Invalid treasury");
 
-        gaugeController = GaugeController(_gaugeController);
+        gaugeController = IGaugeControllerForBribes(_gaugeController);
         treasury = _treasury;
         currentEpoch = 0;
         nextBribeId = 0;
