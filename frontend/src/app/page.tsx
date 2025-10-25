@@ -56,6 +56,23 @@ export default function Home() {
                 </Typography>
               </Link>
 
+              <Link href="/liquidity/add" style={{ textDecoration: 'none' }}>
+                <Typography
+                  variant="body1"
+                  fontWeight={600}
+                  sx={{
+                    color: 'text.secondary',
+                    cursor: 'pointer',
+                    transition: 'color 0.3s',
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  Liquidity
+                </Typography>
+              </Link>
+
               <Link href="/lock" style={{ textDecoration: 'none' }}>
                 <Typography
                   variant="body1"
