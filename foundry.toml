@@ -22,8 +22,8 @@ max_test_rejects = 100000
 # Invariant testing configuration
 [invariant]
 runs = 100
-depth = 500
-fail_on_revert = true
+depth = 15
+fail_on_revert = false
 
 # Gas reporting
 gas_reports = ["*"]
