@@ -325,7 +325,10 @@ describe("PriceOracle", function () {
       await chainlinkUSDC.setShouldRevert(true);
       await pyth.setShouldRevert(true);
 
-      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWith("All oracles failed");
+      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWithCustomError(
+        oracle,
+        "AllOraclesFailed"
+      );
     });
 
     it("Should revert when adding duplicate price feed", async function () {
@@ -395,9 +398,9 @@ describe("PriceOracle", function () {
 
       await oracle.addPriceFeed(USDC_USD_FEED_ID, await chainlinkUSDC.getAddress());
 
-      // Trip circuit breaker
+      // Trip circuit breaker (need real tx to update state, not staticCall)
       await chainlinkUSDC.setLatestAnswer(110000000n);
-      await oracle.getPrice.staticCall(USDC_USD_FEED_ID);
+      await oracle.getPrice(USDC_USD_FEED_ID);
 
       const circuitBreakerState = await oracle.circuitBreakerState(USDC_USD_FEED_ID);
       expect(circuitBreakerState.isTripped).to.be.true;
@@ -409,9 +412,9 @@ describe("PriceOracle", function () {
 
       await oracle.addPriceFeed(USDC_USD_FEED_ID, await chainlinkUSDC.getAddress());
 
-      // Trip circuit breaker
+      // Trip circuit breaker (need real tx to update state)
       await chainlinkUSDC.setLatestAnswer(110000000n);
-      await oracle.getPrice.staticCall(USDC_USD_FEED_ID);
+      await oracle.getPrice(USDC_USD_FEED_ID);
 
       // Fast forward 30 minutes
       await time.increase(Number(RECOVERY_DELAY) + 1);
@@ -493,11 +496,11 @@ describe("PriceOracle", function () {
       await oracle.addPriceFeed(USDT_USD_FEED_ID, await chainlinkUSDT.getAddress());
       await oracle.addPriceFeed(BNB_USD_FEED_ID, await chainlinkBNB.getAddress());
 
-      // Request multiple prices
+      // Request multiple prices (use staticCall for read-only)
       const [priceUSDC, priceUSDT, priceBNB] = await Promise.all([
-        oracle.getPrice(USDC_USD_FEED_ID),
-        oracle.getPrice(USDT_USD_FEED_ID),
-        oracle.getPrice(BNB_USD_FEED_ID),
+        oracle.getPrice.staticCall(USDC_USD_FEED_ID),
+        oracle.getPrice.staticCall(USDT_USD_FEED_ID),
+        oracle.getPrice.staticCall(BNB_USD_FEED_ID),
       ]);
 
       expect(priceUSDC).to.equal(100000000n);
