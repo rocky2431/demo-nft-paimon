@@ -111,7 +111,7 @@ describe("PriceOracle", function () {
       const PriceOracle = await ethers.getContractFactory("PriceOracle");
       await expect(
         PriceOracle.deploy(ethers.ZeroAddress, DEVIATION_THRESHOLD, STALENESS_THRESHOLD)
-      ).to.be.revertedWith("Invalid Pyth address");
+      ).to.be.revertedWithCustomError(await ethers.getContractFactory("PriceOracle"), "InvalidPythAddress");
     });
   });
 
@@ -235,8 +235,9 @@ describe("PriceOracle", function () {
       await oracle.addPriceFeed(USDC_USD_FEED_ID, await chainlinkUSDC.getAddress());
       await chainlinkUSDC.setLatestAnswer(-100000000n);
 
-      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWith(
-        "Invalid Chainlink price"
+      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWithCustomError(
+        oracle,
+        "InvalidChainlinkPrice"
       );
     });
 
@@ -300,7 +301,7 @@ describe("PriceOracle", function () {
     it("Should revert when price feed not found", async function () {
       const { oracle } = await loadFixture(deployPriceOracleFixture);
 
-      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWith("Price feed not found");
+      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWithCustomError(oracle, "PriceFeedNotFound");
     });
 
     it("Should revert when Chainlink data is stale (>1 hour)", async function () {
@@ -338,7 +339,7 @@ describe("PriceOracle", function () {
 
       await expect(
         oracle.addPriceFeed(USDC_USD_FEED_ID, await chainlinkUSDC.getAddress())
-      ).to.be.revertedWith("Price feed already exists");
+      ).to.be.revertedWithCustomError(oracle, "PriceFeedAlreadyExists");
     });
 
     it("Should revert when non-owner tries to add price feed", async function () {
@@ -464,7 +465,7 @@ describe("PriceOracle", function () {
       await oracle.connect(owner).removePriceFeed(USDC_USD_FEED_ID);
 
       // Should revert after removal
-      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWith("Price feed not found");
+      await expect(oracle.getPrice(USDC_USD_FEED_ID)).to.be.revertedWithCustomError(oracle, "PriceFeedNotFound");
     });
 
     it("Should handle Chainlink failure → Pyth fallback → Chainlink recovery", async function () {

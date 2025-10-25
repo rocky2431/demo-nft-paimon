@@ -111,6 +111,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
     // ============================================================
 
     error InvalidPythAddress();
+    error InvalidAggregatorAddress();
     error PriceFeedNotFound();
     error PriceFeedAlreadyExists();
     error InvalidChainlinkPrice();
@@ -127,7 +128,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
         uint256 _deviationThreshold,
         uint256 _stalenessThreshold
     ) Ownable(msg.sender) {
-        require(_pyth != address(0), "Invalid Pyth address");
+        if (_pyth == address(0)) revert InvalidPythAddress();
         pyth = IPyth(_pyth);
         deviationThreshold = _deviationThreshold;
         stalenessThreshold = _stalenessThreshold;
@@ -143,8 +144,8 @@ contract PriceOracle is Ownable, ReentrancyGuard {
      * @param aggregator Chainlink aggregator address
      */
     function addPriceFeed(bytes32 feedId, address aggregator) external onlyOwner {
-        require(priceFeeds[feedId] == address(0), "Price feed already exists");
-        require(aggregator != address(0), "Invalid aggregator address");
+        if (priceFeeds[feedId] != address(0)) revert PriceFeedAlreadyExists();
+        if (aggregator == address(0)) revert InvalidAggregatorAddress();
 
         priceFeeds[feedId] = aggregator;
         emit PriceFeedAdded(feedId, aggregator);
@@ -155,7 +156,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
      * @param feedId Feed identifier to remove
      */
     function removePriceFeed(bytes32 feedId) external onlyOwner {
-        require(priceFeeds[feedId] != address(0), "Price feed not found");
+        if (priceFeeds[feedId] == address(0)) revert PriceFeedNotFound();
 
         delete priceFeeds[feedId];
         delete circuitBreakerState[feedId];
@@ -198,22 +199,26 @@ contract PriceOracle is Ownable, ReentrancyGuard {
      */
     function getPrice(bytes32 feedId) external nonReentrant returns (uint256 price) {
         address aggregator = priceFeeds[feedId];
-        require(aggregator != address(0), "Price feed not found");
+        if (aggregator == address(0)) revert PriceFeedNotFound();
+
+        // Cache storage variables to save gas (avoid multiple SLOADs)
+        uint256 cachedStalenessThreshold = stalenessThreshold;
+        uint256 cachedDeviationThreshold = deviationThreshold;
 
         // Check if circuit breaker is tripped
         CircuitBreakerState storage cbState = circuitBreakerState[feedId];
 
         // Try Chainlink first
-        (bool chainlinkSuccess, uint256 chainlinkPrice, uint256 chainlinkUpdatedAt, bool isCriticalError) =
-            _getChainlinkPrice(aggregator);
+        (bool chainlinkSuccess, uint256 chainlinkPrice, , bool isCriticalError) =
+            _getChainlinkPrice(aggregator, cachedStalenessThreshold);
 
         // If Chainlink had a critical error (e.g., negative price), revert immediately
         if (isCriticalError) {
-            require(false, "Invalid Chainlink price");
+            revert InvalidChainlinkPrice();
         }
 
         // Try Pyth
-        (bool pythSuccess, uint256 pythPrice) = _getPythPrice(feedId);
+        (bool pythSuccess, uint256 pythPrice) = _getPythPrice(feedId, cachedStalenessThreshold);
 
         // If both failed, revert
         if (!chainlinkSuccess && !pythSuccess) {
@@ -236,7 +241,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
         uint256 deviation = _calculateDeviation(chainlinkPrice, pythPrice);
 
         // Check if circuit breaker should trip (>= threshold, not just >)
-        if (deviation >= deviationThreshold) {
+        if (deviation >= cachedDeviationThreshold) {
             // Trip circuit breaker
             if (!cbState.isTripped) {
                 cbState.isTripped = true;
@@ -270,12 +275,13 @@ contract PriceOracle is Ownable, ReentrancyGuard {
     /**
      * @notice Get price from Chainlink
      * @param aggregator Chainlink aggregator address
+     * @param stalenessThreshold_ Cached staleness threshold
      * @return success Whether fetch succeeded
      * @return price Price normalized to 8 decimals
      * @return updatedAt Last update timestamp
      * @return isCriticalError Whether error requires revert (not just fallback)
      */
-    function _getChainlinkPrice(address aggregator)
+    function _getChainlinkPrice(address aggregator, uint256 stalenessThreshold_)
         internal
         view
         returns (bool success, uint256 price, uint256 updatedAt, bool isCriticalError)
@@ -283,9 +289,9 @@ contract PriceOracle is Ownable, ReentrancyGuard {
         try AggregatorV3Interface(aggregator).latestRoundData() returns (
             uint80 roundId,
             int256 answer,
-            uint256 startedAt,
+            uint256 /* startedAt */,
             uint256 updatedAt_,
-            uint80 answeredInRound
+            uint80 /* answeredInRound */
         ) {
             // Check for negative price - this is a critical error that must revert
             if (answer < 0) {
@@ -298,7 +304,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
             }
 
             // Check staleness - if data is too old, fallback to Pyth
-            if (block.timestamp - updatedAt_ > stalenessThreshold) {
+            if (block.timestamp - updatedAt_ > stalenessThreshold_) {
                 return (false, 0, 0, false);
             }
 
@@ -315,10 +321,11 @@ contract PriceOracle is Ownable, ReentrancyGuard {
     /**
      * @notice Get price from Pyth
      * @param feedId Feed identifier
+     * @param stalenessThreshold_ Cached staleness threshold
      * @return success Whether fetch succeeded
      * @return price Price normalized to 8 decimals
      */
-    function _getPythPrice(bytes32 feedId) internal view returns (bool success, uint256 price) {
+    function _getPythPrice(bytes32 feedId, uint256 stalenessThreshold_) internal view returns (bool success, uint256 price) {
         try pyth.getPrice(feedId) returns (IPyth.Price memory pythPrice) {
             // Validate price
             if (pythPrice.price <= 0) {
@@ -326,7 +333,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
             }
 
             // Check staleness
-            if (block.timestamp > pythPrice.publishTime + stalenessThreshold) {
+            if (block.timestamp > pythPrice.publishTime + stalenessThreshold_) {
                 return (false, 0);
             }
 
@@ -404,13 +411,5 @@ contract PriceOracle is Ownable, ReentrancyGuard {
 
         // Use Pyth as reference (denominator) for deviation calculation
         return (diff * BASIS_POINTS) / pythPrice;
-    }
-
-    /**
-     * @notice Check if price is stale
-     * @param updatedAt Last update timestamp
-     */
-    function _checkStaleness(uint256 updatedAt) internal view {
-        require(block.timestamp - updatedAt <= stalenessThreshold, "Stale price");
     }
 }
