@@ -318,4 +318,69 @@ contract GaugeController is Ownable, ReentrancyGuard {
 
         emit BatchVoted(msg.sender, _tokenId, epoch);
     }
+
+    // ============================================================
+    // HELPER FUNCTIONS FOR BRIBE MARKETPLACE
+    // ============================================================
+
+    /**
+     * @notice Get gauge ID by address
+     * @param _gaugeAddress Gauge address
+     * @return gaugeId Gauge ID (returns gaugeCount if not found)
+     */
+    function getGaugeIdByAddress(address _gaugeAddress) public view returns (uint256) {
+        for (uint256 i = 0; i < gaugeCount; i++) {
+            if (gauges[i].gaugeAddress == _gaugeAddress) {
+                return i;
+            }
+        }
+        return gaugeCount; // Not found
+    }
+
+    /**
+     * @notice Get user's vote for current epoch (for BribeMarketplace integration)
+     * @param _tokenId veNFT token ID
+     * @return votedGauge Gauge address (zero address if no votes)
+     * @return voteWeight Total vote weight for highest voted gauge
+     * @return epoch Current epoch
+     * @dev Returns the gauge with highest vote weight for simplicity
+     */
+    function getUserVote(uint256 _tokenId) external view returns (address votedGauge, uint256 voteWeight, uint256 epoch) {
+        epoch = currentEpoch;
+        uint256 maxWeight = 0;
+        uint256 maxGaugeId = 0;
+
+        // Find gauge with highest vote weight
+        for (uint256 i = 0; i < gaugeCount; i++) {
+            uint256 weight = userVotes[_tokenId][epoch][i];
+            if (weight > maxWeight) {
+                maxWeight = weight;
+                maxGaugeId = i;
+            }
+        }
+
+        if (maxWeight > 0) {
+            // Calculate actual vote weight (voting power * allocation %)
+            uint256 votingPower = votingEscrow.balanceOfNFT(_tokenId);
+            voteWeight = (votingPower * maxWeight) / WEIGHT_PRECISION;
+            votedGauge = gauges[maxGaugeId].gaugeAddress;
+        } else {
+            votedGauge = address(0);
+            voteWeight = 0;
+        }
+    }
+
+    /**
+     * @notice Get total weight for gauge by address
+     * @param _epoch Epoch number
+     * @param _gaugeAddress Gauge address
+     * @return Total weight for gauge in epoch
+     */
+    function getGaugeWeightByAddress(uint256 _epoch, address _gaugeAddress) external view returns (uint256) {
+        uint256 gaugeId = getGaugeIdByAddress(_gaugeAddress);
+        if (gaugeId >= gaugeCount) {
+            return 0; // Gauge not found
+        }
+        return gaugeWeights[_epoch][gaugeId];
+    }
 }
