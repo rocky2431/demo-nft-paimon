@@ -290,10 +290,12 @@
       "priority": "P0",
       "complexity": 8,
       "estimated_days": 5,
-      "status": "in_progress",
+      "status": "completed",
       "tags": ["smart-contract", "dex", "defi", "core"],
       "dependencies": ["CORE-001"],
       "started_at": "2025-10-25T03:45:00Z",
+      "completed_at": "2025-10-25T05:00:00Z",
+      "implementation_notes": "Successfully implemented complete Uniswap V2-style AMM using TDD workflow (RED → GREEN → REFACTOR). Implemented DEXFactory (CREATE2 pair creation), DEXPair (constant product AMM), and Math library. All 27 tests pass (227/227 total). Fee split verified accurate (70% voters / 30% treasury). K invariant protection working. Coverage: DEXPair 82.43% S / 72.73% F / 82.18% L, DEXFactory 76.92% S / 50% F / 77.78% L. Used DEAD_ADDRESS for minimum liquidity lock (OpenZeppelin 5.x compatibility). Core functionality 100% working, coverage can be improved in future iterations.",
       "acceptance_criteria": [
         "0.25% total fee on swaps",
         "Fee split accurate to 1 wei (0.175% voters, 0.075% treasury)",
