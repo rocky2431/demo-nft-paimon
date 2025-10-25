@@ -3,9 +3,9 @@
 import { Container, Typography, Box, Stack } from '@mui/material';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
-import { VotingCard } from '@/components/voting/VotingCard';
+import { AddLiquidityCard } from '@/components/liquidity/AddLiquidityCard';
 
-export default function VotePage() {
+export default function AddLiquidityPage() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Top navigation bar (OlympusDAO style) */}
@@ -67,12 +67,8 @@ export default function VotePage() {
                   variant="body1"
                   fontWeight={600}
                   sx={{
-                    color: 'text.secondary',
+                    color: 'primary.main', // Active page
                     cursor: 'pointer',
-                    transition: 'color 0.3s',
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
                   }}
                 >
                   Liquidity
@@ -101,8 +97,12 @@ export default function VotePage() {
                   variant="body1"
                   fontWeight={600}
                   sx={{
-                    color: 'primary.main', // Active page
+                    color: 'text.secondary',
                     cursor: 'pointer',
+                    transition: 'color 0.3s',
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
                   }}
                 >
                   Vote
@@ -116,7 +116,7 @@ export default function VotePage() {
         </Container>
       </Box>
 
-      {/* Main content area (centered VotingCard) */}
+      {/* Main content area (centered AddLiquidityCard) */}
       <Container
         maxWidth="lg"
         sx={{
@@ -132,8 +132,8 @@ export default function VotePage() {
         {/* Huge whitespace (OlympusDAO style) */}
         <Box sx={{ height: { xs: 40, sm: 60 } }} />
 
-        {/* VotingCard */}
-        <VotingCard />
+        {/* AddLiquidityCard */}
+        <AddLiquidityCard />
 
         {/* Huge whitespace (OlympusDAO style) */}
         <Box sx={{ height: { xs: 40, sm: 60 } }} />
@@ -148,7 +148,7 @@ export default function VotePage() {
             fontSize: '0.875rem',
           }}
         >
-          Governance Voting • Epoch-based Rewards Distribution
+          Add Liquidity • Earn Trading Fees • ve33 DEX
         </Typography>
       </Container>
     </Box>
