@@ -274,3 +274,65 @@ export interface RemoveLiquidityParams {
  * Percentage preset options for remove liquidity
  */
 export type RemovePercentagePreset = 25 | 50 | 75 | 100; // in percentage
+
+// ==================== Staking Types ====================
+
+/**
+ * State machine for staking flow
+ */
+export enum StakingState {
+  /** Initial state - waiting for user input */
+  IDLE = 'IDLE',
+  /** LP token needs approval */
+  NEEDS_APPROVAL = 'NEEDS_APPROVAL',
+  /** Approving LP token */
+  APPROVING = 'APPROVING',
+  /** Ready to stake/unstake */
+  READY = 'READY',
+  /** Staking transaction in progress */
+  STAKING = 'STAKING',
+  /** Unstaking transaction in progress */
+  UNSTAKING = 'UNSTAKING',
+  /** Claiming rewards transaction in progress */
+  CLAIMING = 'CLAIMING',
+  /** Successfully completed */
+  SUCCESS = 'SUCCESS',
+  /** Error occurred */
+  ERROR = 'ERROR',
+}
+
+/**
+ * Staking form data
+ */
+export interface StakingFormData {
+  /** Selected pool */
+  pool: LiquidityPool | null;
+  /** LP token balance */
+  lpBalance: bigint;
+  /** Staked balance in gauge */
+  stakedBalance: bigint;
+  /** Earned rewards (PAIMON) */
+  earnedRewards: bigint;
+  /** Amount to stake/unstake */
+  amount: bigint;
+  /** Stake or unstake action */
+  action: 'stake' | 'unstake';
+}
+
+/**
+ * Staking info from gauge
+ */
+export interface StakingInfo {
+  /** Gauge contract address */
+  gauge: `0x${string}`;
+  /** Total staked in gauge */
+  totalStaked: bigint;
+  /** Reward rate (PAIMON per second) */
+  rewardRate: bigint;
+  /** Annual Percentage Rate */
+  apr: string;
+  /** User's staked amount */
+  userStaked: bigint;
+  /** User's earned rewards */
+  userEarned: bigint;
+}

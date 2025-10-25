@@ -356,3 +356,25 @@ export const calculateRemoveAmount = (
   if (liquidity === 0n || reserve === 0n || totalSupply === 0n) return 0n;
   return (liquidity * reserve) / totalSupply;
 };
+
+// ==================== Staking Constants ====================
+
+/**
+ * Gauge addresses for liquidity mining
+ * TODO: Update with actual deployed gauge addresses
+ */
+export const GAUGE_ADDRESSES: Record<string, `0x${string}`> = {
+  'HYD/USDC': '0x0000000000000000000000000000000000000100' as `0x${string}`,
+  'HYD/WBNB': '0x0000000000000000000000000000000000000101' as `0x${string}`,
+  'USDC/BUSD': '0x0000000000000000000000000000000000000102' as `0x${string}`,
+  'PAIMON/WBNB': '0x0000000000000000000000000000000000000103' as `0x${string}`,
+};
+
+/**
+ * Get gauge address for a pool
+ * @param poolName - Pool name (e.g., "HYD/USDC")
+ * @returns Gauge address or null
+ */
+export const getGaugeAddress = (poolName: string): `0x${string}` | null => {
+  return GAUGE_ADDRESSES[poolName] || null;
+};
