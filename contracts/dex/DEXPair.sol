@@ -206,7 +206,6 @@ contract DEXPair is ERC20, ReentrancyGuard {
      * @param amount0Out Amount of token0 to send out
      * @param amount1Out Amount of token1 to send out
      * @param to Address to receive tokens
-     * @param data Calldata for flash swap callback (not implemented in v1)
      */
     function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata /* data */) external nonReentrant {
         require(amount0Out > 0 || amount1Out > 0, "INSUFFICIENT_OUTPUT_AMOUNT");
