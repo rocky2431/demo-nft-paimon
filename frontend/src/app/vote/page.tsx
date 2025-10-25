@@ -3,9 +3,9 @@
 import { Container, Typography, Box, Stack } from '@mui/material';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
-import { SwapCard } from '@/components/swap/SwapCard';
+import { VotingCard } from '@/components/voting/VotingCard';
 
-export default function Home() {
+export default function VotePage() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Top navigation bar (OlympusDAO style) */}
@@ -31,15 +31,17 @@ export default function Home() {
             sx={{ py: 2 }}
           >
             {/* Logo / Brand */}
-            <Typography
-              variant="h6"
-              component="h1"
-              fontWeight={700}
-              color="primary"
-              sx={{ fontSize: '1.5rem' }}
-            >
-              Paimon DEX
-            </Typography>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <Typography
+                variant="h6"
+                component="h1"
+                fontWeight={700}
+                color="primary"
+                sx={{ fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                Paimon DEX
+              </Typography>
+            </Link>
 
             {/* Navigation Links */}
             <Stack direction="row" spacing={3} alignItems="center">
@@ -48,8 +50,12 @@ export default function Home() {
                   variant="body1"
                   fontWeight={600}
                   sx={{
-                    color: 'primary.main', // Active page
+                    color: 'text.secondary',
                     cursor: 'pointer',
+                    transition: 'color 0.3s',
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
                   }}
                 >
                   Swap
@@ -78,12 +84,8 @@ export default function Home() {
                   variant="body1"
                   fontWeight={600}
                   sx={{
-                    color: 'text.secondary',
+                    color: 'primary.main', // Active page
                     cursor: 'pointer',
-                    transition: 'color 0.3s',
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
                   }}
                 >
                   Vote
@@ -97,31 +99,27 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* Main content area (centered SwapCard) */}
+      {/* Main content area (centered VotingCard) */}
       <Container
-        maxWidth={false}
+        maxWidth="lg"
         sx={{
           pt: 12, // Account for fixed navbar
           pb: 8,
           px: {
             xs: 2, // Mobile: 16px padding
-            sm: 0, // Desktop: no padding
+            sm: 3, // Desktop: 24px padding
           },
           minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
         }}
       >
         {/* Huge whitespace (OlympusDAO style) */}
-        <Box sx={{ height: { xs: 40, sm: 80 } }} />
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
 
-        {/* SwapCard */}
-        <SwapCard />
+        {/* VotingCard */}
+        <VotingCard />
 
         {/* Huge whitespace (OlympusDAO style) */}
-        <Box sx={{ height: { xs: 40, sm: 80 } }} />
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
 
         {/* Footer info */}
         <Typography
@@ -133,7 +131,7 @@ export default function Home() {
             fontSize: '0.875rem',
           }}
         >
-          ve33 Decentralized Exchange • BSC Network
+          Governance Voting • Epoch-based Rewards Distribution
         </Typography>
       </Container>
     </Box>

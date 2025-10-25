@@ -3,9 +3,9 @@
 import { Container, Typography, Box, Stack } from '@mui/material';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
-import { SwapCard } from '@/components/swap/SwapCard';
+import { VeNFTCard } from '@/components/venft/VeNFTCard';
 
-export default function Home() {
+export default function LockPage() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Top navigation bar (OlympusDAO style) */}
@@ -31,15 +31,17 @@ export default function Home() {
             sx={{ py: 2 }}
           >
             {/* Logo / Brand */}
-            <Typography
-              variant="h6"
-              component="h1"
-              fontWeight={700}
-              color="primary"
-              sx={{ fontSize: '1.5rem' }}
-            >
-              Paimon DEX
-            </Typography>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <Typography
+                variant="h6"
+                component="h1"
+                fontWeight={700}
+                color="primary"
+                sx={{ fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                Paimon DEX
+              </Typography>
+            </Link>
 
             {/* Navigation Links */}
             <Stack direction="row" spacing={3} alignItems="center">
@@ -48,8 +50,12 @@ export default function Home() {
                   variant="body1"
                   fontWeight={600}
                   sx={{
-                    color: 'primary.main', // Active page
+                    color: 'text.secondary',
                     cursor: 'pointer',
+                    transition: 'color 0.3s',
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
                   }}
                 >
                   Swap
@@ -61,12 +67,8 @@ export default function Home() {
                   variant="body1"
                   fontWeight={600}
                   sx={{
-                    color: 'text.secondary',
+                    color: 'primary.main', // Active page
                     cursor: 'pointer',
-                    transition: 'color 0.3s',
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
                   }}
                 >
                   Lock
@@ -97,7 +99,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* Main content area (centered SwapCard) */}
+      {/* Main content area (centered VeNFTCard) */}
       <Container
         maxWidth={false}
         sx={{
@@ -117,8 +119,8 @@ export default function Home() {
         {/* Huge whitespace (OlympusDAO style) */}
         <Box sx={{ height: { xs: 40, sm: 80 } }} />
 
-        {/* SwapCard */}
-        <SwapCard />
+        {/* VeNFTCard */}
+        <VeNFTCard />
 
         {/* Huge whitespace (OlympusDAO style) */}
         <Box sx={{ height: { xs: 40, sm: 80 } }} />
@@ -133,7 +135,7 @@ export default function Home() {
             fontSize: '0.875rem',
           }}
         >
-          ve33 Decentralized Exchange • BSC Network
+          Vote-Escrowed NFT • BSC Network
         </Typography>
       </Container>
     </Box>
