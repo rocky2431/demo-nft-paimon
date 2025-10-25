@@ -4,7 +4,7 @@
     "project_name": "paimon-dex",
     "project_type": "defi-protocol",
     "created": "2025-10-24T18:26:00Z",
-    "last_updated": "2025-10-26T00:30:00Z",
+    "last_updated": "2025-10-26T01:45:00Z",
     "total_phases": 5,
     "estimated_duration_weeks": 8,
     "deployment_target": "BSC Mainnet (Testnet: BSC Testnet 97)"
@@ -12,9 +12,9 @@
   "stats": {
     "total": 34,
     "pending": 7,
-    "in_progress": 1,
+    "in_progress": 0,
     "blocked": 0,
-    "completed": 25,
+    "completed": 26,
     "cancelled": 0,
     "by_priority": {
       "P0": 20,
@@ -412,10 +412,12 @@
       "priority": "P0",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "in_progress",
+      "status": "completed",
       "tags": ["smart-contract", "defi", "treasury", "core"],
       "dependencies": ["CORE-002", "DEX-001"],
       "started_at": "2025-10-26T00:30:00Z",
+      "completed_at": "2025-10-26T01:45:00Z",
+      "implementation_notes": "Successfully implemented Treasury contract using TDD workflow (RED → GREEN → REFACTOR). Features: collect DEX treasury fees (30% of 0.25%), multi-sig controlled withdrawals (Ownable2Step), emergency pause (Pausable), ETH + ERC20 support, ReentrancyGuard protection, custom errors for gas optimization. All 27/27 tests passing (100%). Files: contracts/treasury/Treasury.sol (201 lines), test/unit/Treasury.t.sol (394 lines). Test coverage: Constructor (2), ClaimDEXFees (5), Withdraw (7), Emergency pause (4), Query functions (2), ETH handling (3), Ownership transfer (2), Fuzz tests (2). Security: only owner withdrawals, pausable, reentrancy-protected, SafeERC20, Ownable2Step. Gas optimizations: custom errors, removed unused variables, minimal storage slots.",
       "acceptance_criteria": [
         "Collects PSM fees (0.1% from swaps)",
         "Collects DEX fees (30% of 0.25% = 0.075%)",
