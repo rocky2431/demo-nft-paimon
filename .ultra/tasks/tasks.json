@@ -4,27 +4,27 @@
     "project_name": "paimon-dex",
     "project_type": "defi-protocol",
     "created": "2025-10-24T18:26:00Z",
-    "last_updated": "2025-10-25T18:30:00Z",
+    "last_updated": "2025-10-25T20:00:00Z",
     "total_phases": 5,
     "estimated_duration_weeks": 8,
     "deployment_target": "BSC Mainnet (Testnet: BSC Testnet 97)"
   },
   "stats": {
-    "total": 29,
-    "pending": 16,
-    "in_progress": 0,
+    "total": 32,
+    "pending": 15,
+    "in_progress": 1,
     "blocked": 0,
-    "completed": 13,
+    "completed": 16,
     "cancelled": 0,
     "by_priority": {
       "P0": 19,
-      "P1": 8,
+      "P1": 11,
       "P2": 2
     },
     "by_complexity": {
       "simple (1-3)": 2,
-      "medium (4-6)": 16,
-      "complex (7-10)": 11
+      "medium (4-6)": 17,
+      "complex (7-10)": 13
     }
   },
   "phases": [
@@ -715,6 +715,83 @@
       ],
       "technical_notes": "Announce: 1) Audit report link 2) Bug bounty 3) Initial liquidity 4) Roadmap. User docs: screenshots, video tutorials (EN + CN).",
       "reference": ".ultra/docs/prd.md#launch-strategy"
+    },
+    {
+      "id": "FE-007",
+      "title": "Liquidity Mining UI Component",
+      "description": "Stake/Unstake LP tokens in Gauge, earn PAIMON rewards, real-time APR display, one-click claim",
+      "phase": "phase-3",
+      "priority": "P1",
+      "complexity": 7,
+      "estimated_days": 3,
+      "status": "completed",
+      "tags": ["frontend", "ui", "liquidity", "staking"],
+      "dependencies": ["FE-005", "FE-006", "GOV-001"],
+      "started_at": "2025-10-25T14:00:00Z",
+      "completed_at": "2025-10-25T16:30:00Z",
+      "implementation_notes": "Successfully implemented liquidity mining interface with Gauge integration. Features: Stake/Unstake tabs, real-time rewards tracking with animated counter, APR display, one-click claim rewards. Components: StakeAmountInput (215 lines), StakingStats (108 lines), RewardsDisplay (188 lines), StakingButton (143 lines), StakingCard (163 lines), useStaking hook (406 lines). TypeScript: 0 errors, Next.js Build: Successful, Bundle: 232 KB, Route: /liquidity/stake. wagmi v2 integration with 7 contract reads and 4 writes.",
+      "acceptance_criteria": [
+        "User can stake/unstake LP tokens",
+        "Real-time rewards display with animation",
+        "APR calculation accurate",
+        "One-click claim rewards works",
+        "Gauge integration complete",
+        "TypeScript 0 errors",
+        "Next.js build successful"
+      ],
+      "technical_notes": "Gauge ABI: deposit(), withdraw(), getReward(), balanceOf(), earned(). OlympusDAO design: pill buttons, orange gradients, fire icon animation.",
+      "reference": ".ultra/docs/implementation/FE-007-COMPLETION.md"
+    },
+    {
+      "id": "FE-008",
+      "title": "Rewards Dashboard UI Component",
+      "description": "Unified rewards management: view all pool rewards, one-click claim all, rewards summary statistics",
+      "phase": "phase-3",
+      "priority": "P1",
+      "complexity": 6,
+      "estimated_days": 2,
+      "status": "completed",
+      "tags": ["frontend", "ui", "rewards"],
+      "dependencies": ["FE-007"],
+      "started_at": "2025-10-25T17:00:00Z",
+      "completed_at": "2025-10-25T19:30:00Z",
+      "implementation_notes": "Successfully implemented rewards dashboard for unified rewards management. Features: Multi-pool rewards aggregation (4 pools), comprehensive summary statistics, individual + batch claim functionality, weighted APR calculation. Components: RewardsSummary (114 lines), PoolRewardsList (197 lines), ClaimAllButton (132 lines), RewardsDashboard (102 lines), useRewards hook (361 lines). TypeScript: 0 errors, Next.js Build: Successful, Bundle: 199 KB, Route: /rewards. Fixed React Hooks rules violation by hardcoding 4 pool queries.",
+      "acceptance_criteria": [
+        "Display all pools' earned rewards",
+        "One-click claim all rewards",
+        "Rewards summary statistics (Total, APR, Active Positions)",
+        "Weighted APR calculation",
+        "Responsive design",
+        "TypeScript 0 errors",
+        "Next.js build successful"
+      ],
+      "technical_notes": "Hardcoded 4 pool queries to satisfy React Hooks rules (cannot use hooks in loops). Future: consider multicall or subgraph for scalability.",
+      "reference": ".ultra/docs/implementation/FE-008-COMPLETION.md"
+    },
+    {
+      "id": "FE-009",
+      "title": "Bribes Marketplace UI Component",
+      "description": "Create bribes for gauges, claim bribes based on vote weight, 2% platform fee, token whitelist",
+      "phase": "phase-3",
+      "priority": "P1",
+      "complexity": 7,
+      "estimated_days": 3,
+      "status": "in_progress",
+      "tags": ["frontend", "ui", "governance", "bribes"],
+      "dependencies": ["GOV-003", "FE-004"],
+      "started_at": "2025-10-25T20:00:00Z",
+      "acceptance_criteria": [
+        "Protocols can create bribes for gauges",
+        "Display all active bribes grouped by gauge",
+        "veNFT holders can claim proportional bribes",
+        "2% platform fee calculated correctly",
+        "Only whitelisted tokens accepted",
+        "Verify user has voted before claiming",
+        "TypeScript 0 errors",
+        "Next.js build successful"
+      ],
+      "technical_notes": "BribeMarketplace contract: createBribe(epoch, gauge, token, amount), claimBribe(bribeId, tokenId). Platform fee: 200/10000 = 2%. User share = (bribe amount × vote weight) / total votes.",
+      "reference": ".ultra/docs/implementation/FE-009-COMPLETION.md (pending)"
     }
   ],
   "risk_assessment": {
