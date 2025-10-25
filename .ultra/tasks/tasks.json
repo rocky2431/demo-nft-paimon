@@ -11,8 +11,8 @@
   },
   "stats": {
     "total": 29,
-    "pending": 18,
-    "in_progress": 0,
+    "pending": 17,
+    "in_progress": 1,
     "blocked": 0,
     "completed": 6,
     "cancelled": 0,
@@ -248,9 +248,10 @@
       "priority": "P0",
       "complexity": 7,
       "estimated_days": 4,
-      "status": "pending",
+      "status": "in_progress",
       "tags": ["smart-contract", "governance", "rewards"],
       "dependencies": ["CORE-003", "GOV-001"],
+      "started_at": "2025-10-25T06:00:00Z",
       "acceptance_criteria": [
         "Rewards proportional to voting power at snapshot",
         "Merkle proof verification gas <50K",
