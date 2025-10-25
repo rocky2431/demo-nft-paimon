@@ -4,26 +4,26 @@
     "project_name": "paimon-dex",
     "project_type": "defi-protocol",
     "created": "2025-10-24T18:26:00Z",
-    "last_updated": "2025-10-26T00:15:00Z",
+    "last_updated": "2025-10-26T00:30:00Z",
     "total_phases": 5,
     "estimated_duration_weeks": 8,
     "deployment_target": "BSC Mainnet (Testnet: BSC Testnet 97)"
   },
   "stats": {
-    "total": 33,
+    "total": 34,
     "pending": 7,
-    "in_progress": 0,
+    "in_progress": 1,
     "blocked": 0,
     "completed": 25,
     "cancelled": 0,
     "by_priority": {
-      "P0": 19,
+      "P0": 20,
       "P1": 12,
       "P2": 2
     },
     "by_complexity": {
       "simple (1-3)": 2,
-      "medium (4-6)": 18,
+      "medium (4-6)": 19,
       "complex (7-10)": 13
     }
   },
@@ -403,6 +403,29 @@
       ],
       "technical_notes": "Venus governance: https://community.venus.io. Prepare liquidity data, market cap, oracle setup. Typical timeline: 2-4 weeks for approval.",
       "reference": ".ultra/docs/research#venus-integration"
+    },
+    {
+      "id": "DEFI-004",
+      "title": "Treasury Contract Implementation",
+      "description": "Implement protocol treasury to collect and manage PSM fees (0.1%), DEX fees (30% of 0.25%), with multi-sig controlled withdrawals",
+      "phase": "phase-3",
+      "priority": "P0",
+      "complexity": 6,
+      "estimated_days": 3,
+      "status": "in_progress",
+      "tags": ["smart-contract", "defi", "treasury", "core"],
+      "dependencies": ["CORE-002", "DEX-001"],
+      "started_at": "2025-10-26T00:30:00Z",
+      "acceptance_criteria": [
+        "Collects PSM fees (0.1% from swaps)",
+        "Collects DEX fees (30% of 0.25% = 0.075%)",
+        "Multi-sig authorization for withdrawals",
+        "Emergency pause functionality",
+        "Fee distribution tracking",
+        "Test coverage >90%"
+      ],
+      "technical_notes": "Use OpenZeppelin Ownable2Step for multi-sig control. Track fee collection by token. Implement SafeERC20 for withdrawals. Consider Gnosis Safe integration pattern.",
+      "reference": ".ultra/docs/prd.md#treasury"
     },
     {
       "id": "FE-001",
