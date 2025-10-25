@@ -290,9 +290,10 @@
       "priority": "P0",
       "complexity": 8,
       "estimated_days": 5,
-      "status": "pending",
+      "status": "in_progress",
       "tags": ["smart-contract", "dex", "defi", "core"],
       "dependencies": ["CORE-001"],
+      "started_at": "2025-10-25T03:45:00Z",
       "acceptance_criteria": [
         "0.25% total fee on swaps",
         "Fee split accurate to 1 wei (0.175% voters, 0.075% treasury)",
