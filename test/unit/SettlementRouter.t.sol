@@ -51,8 +51,9 @@ contract SettlementRouterTest is Test {
     uint256 public constant MAX_LOCK_DURATION = 1460 days; // 48 months
 
     // VRF Mock Config
-    uint96 public constant VRF_BASE_FEE = 0.25 ether;
-    uint96 public constant VRF_GAS_PRICE_LINK = 1e9;
+    uint64 public constant VRF_SUBSCRIPTION_ID = 1;
+    bytes32 public constant VRF_KEY_HASH = bytes32(uint256(1));
+    uint32 public constant VRF_CALLBACK_GAS_LIMIT = 200_000;
 
     // ==================== Setup ====================
 
@@ -81,18 +82,15 @@ contract SettlementRouterTest is Test {
         // Deploy VRF Coordinator Mock
         vrfCoordinator = new MockVRFCoordinatorV2();
 
-        // Create VRF subscription (simplified for Mock)
-        uint64 subId = 1;
-
-        // Deploy RWABondNFT
+        // Deploy RWABondNFT (need treasury address)
         bondNFT = new RWABondNFT(
             address(usdc),
+            address(treasury),
             address(vrfCoordinator),
-            subId,
-            bytes32(uint256(1)) // keyHash
+            VRF_SUBSCRIPTION_ID,
+            VRF_KEY_HASH,
+            VRF_CALLBACK_GAS_LIMIT
         );
-
-        // No need to add consumer for Mock VRF
 
         // Deploy RemintController
         remintController = new RemintController(
@@ -104,8 +102,24 @@ contract SettlementRouterTest is Test {
         // Set remint controller in bondNFT
         bondNFT.setRemintController(address(remintController));
 
-        // Pause minting to prevent interference
-        bondNFT.pause();
+        // Deploy SettlementRouter
+        router = new SettlementRouter(
+            address(bondNFT),
+            address(remintController),
+            address(votingEscrow),
+            address(treasury),
+            address(hyd),
+            address(psm),
+            address(usdc)
+        );
+
+        // Configure authorizations
+        bondNFT.setSettlementRouter(address(router));
+        votingEscrow.authorizeContract(address(router));
+        hyd.authorizeMinter(address(router)); // Authorize SettlementRouter to mint HYD
+
+        vm.prank(owner);
+        treasury.authorizeSettlementRouter(address(router));
 
         // Fund users with USDC
         vm.startPrank(owner);
@@ -128,10 +142,10 @@ contract SettlementRouterTest is Test {
         // Expected: User settles mature Bond NFT and receives veNFT with HYD locked
 
         // Step 1: Mint Bond NFT for user1
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         // Step 2: Fast forward 90 days to maturity
@@ -144,89 +158,89 @@ contract SettlementRouterTest is Test {
         uint256 lockDuration = 365 days;
 
         vm.prank(user1);
-        // uint256 veNFTTokenId = router.settleToVeNFT(tokenId, lockDuration);
+        uint256 veNFTTokenId = router.settleToVeNFT(tokenId, lockDuration);
 
         // Verify veNFT was created
-        // assertEq(votingEscrow.ownerOf(veNFTTokenId), user1, "User should own veNFT");
+        assertEq(votingEscrow.ownerOf(veNFTTokenId), user1, "User should own veNFT");
 
         // Verify lock amount (100 USDC + 0.5 yield = 100.5 HYD)
-        // VotingEscrow.LockedBalance memory lock = votingEscrow.getLockedBalance(veNFTTokenId);
-        // assertEq(lock.amount, 100.5 * 1e18, "Should lock 100.5 HYD");
+        VotingEscrow.LockedBalance memory lock = votingEscrow.getLockedBalance(veNFTTokenId);
+        assertEq(lock.amount, 100.5 * 1e18, "Should lock 100.5 HYD");
 
         // Verify lock duration
-        // uint256 actualDuration = lock.end - block.timestamp;
-        // assertApproxEqAbs(actualDuration, lockDuration, 1 days, "Lock duration should be ~1 year");
+        uint256 actualDuration = lock.end - block.timestamp;
+        assertApproxEqAbs(actualDuration, lockDuration, 1 days, "Lock duration should be ~1 year");
 
         // Verify Bond NFT was burned
-        // vm.expectRevert();
-        // bondNFT.ownerOf(tokenId);
+        vm.expectRevert();
+        bondNFT.ownerOf(tokenId);
     }
 
     /**
      * @notice [Exception] Should revert when bond not matured
      */
     function test_Exception_ConvertToVeNFT_RevertWhen_NotMatured() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         // Try to settle before 90 days
         vm.prank(user1);
         vm.expectRevert(); // Expect "SettlementRouter: bond not matured"
-        // router.settleToVeNFT(tokenId, 365 days);
+        router.settleToVeNFT(tokenId, 365 days);
     }
 
     /**
      * @notice [Boundary] Should reject lock duration < 90 days
      */
     function test_Boundary_ConvertToVeNFT_RevertWhen_DurationTooShort() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
         vm.prank(user1);
         vm.expectRevert(); // Expect "SettlementRouter: lock duration too short"
-        // router.settleToVeNFT(tokenId, 89 days);
+        router.settleToVeNFT(tokenId, 89 days);
     }
 
     /**
      * @notice [Boundary] Should reject lock duration > 1460 days
      */
     function test_Boundary_ConvertToVeNFT_RevertWhen_DurationTooLong() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
         vm.prank(user1);
         vm.expectRevert(); // Expect "SettlementRouter: lock duration too long"
-        // router.settleToVeNFT(tokenId, 1461 days);
+        router.settleToVeNFT(tokenId, 1461 days);
     }
 
     /**
      * @notice [Exception] Should revert when non-owner tries to settle
      */
     function test_Exception_ConvertToVeNFT_RevertWhen_NotOwner() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
         vm.prank(user2);
         vm.expectRevert(); // Expect "SettlementRouter: caller is not NFT owner"
-        // router.settleToVeNFT(tokenId, 365 days);
+        router.settleToVeNFT(tokenId, 365 days);
     }
 
     /**
@@ -236,10 +250,10 @@ contract SettlementRouterTest is Test {
         // Expected: If user earned Remint from dice rolls, it's included in HYD lock amount
         // Total HYD = 100 (principal) + 0.5 (base yield) + Remint earned
 
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         // Perform dice roll to earn Remint (simplified simulation)
@@ -249,11 +263,11 @@ contract SettlementRouterTest is Test {
         vm.warp(block.timestamp + 90 days);
 
         vm.prank(user1);
-        // uint256 veNFTTokenId = router.settleToVeNFT(tokenId, 365 days);
+        uint256 veNFTTokenId = router.settleToVeNFT(tokenId, 365 days);
 
         // Verify lock amount includes Remint (exact amount depends on dice rolls)
-        // VotingEscrow.LockedBalance memory lock = votingEscrow.getLockedBalance(veNFTTokenId);
-        // assertGe(lock.amount, 100.5 * 1e18, "Should at least lock principal + base yield");
+        VotingEscrow.LockedBalance memory lock = votingEscrow.getLockedBalance(veNFTTokenId);
+        assertGe(lock.amount, 100.5 * 1e18, "Should at least lock principal + base yield");
     }
 
     // ==================== Option 2: Cash Redemption Tests ====================
@@ -264,10 +278,10 @@ contract SettlementRouterTest is Test {
     function test_Functional_RedeemCash_Success() public {
         // Expected: User receives 100 USDC principal + 0.5 USDC base yield + Remint yield
 
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
@@ -275,47 +289,47 @@ contract SettlementRouterTest is Test {
         uint256 user1BalanceBefore = usdc.balanceOf(user1);
 
         vm.prank(user1);
-        // router.settleToCash(tokenId);
+        router.settleToCash(tokenId);
 
         // Verify user1 received USDC (at least 100.5 USDC)
-        // uint256 amountReceived = usdc.balanceOf(user1) - user1BalanceBefore;
-        // assertGe(amountReceived, 100.5 * 1e6, "Should receive at least principal + base yield");
+        uint256 amountReceived = usdc.balanceOf(user1) - user1BalanceBefore;
+        assertGe(amountReceived, 100.5 * 1e6, "Should receive at least principal + base yield");
 
         // Verify Bond NFT was burned
-        // vm.expectRevert();
-        // bondNFT.ownerOf(tokenId);
+        vm.expectRevert();
+        bondNFT.ownerOf(tokenId);
     }
 
     /**
      * @notice [Exception] Should revert when bond not matured
      */
     function test_Exception_RedeemCash_RevertWhen_NotMatured() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.prank(user1);
         vm.expectRevert(); // Expect "SettlementRouter: bond not matured"
-        // router.settleToCash(tokenId);
+        router.settleToCash(tokenId);
     }
 
     /**
      * @notice [Exception] Should revert when non-owner tries to redeem
      */
     function test_Exception_RedeemCash_RevertWhen_NotOwner() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
         vm.prank(user2);
         vm.expectRevert(); // Expect "SettlementRouter: caller is not NFT owner"
-        // router.settleToCash(tokenId);
+        router.settleToCash(tokenId);
     }
 
     /**
@@ -324,10 +338,10 @@ contract SettlementRouterTest is Test {
     function test_Integration_RedeemCash_TotalAmount() public {
         // Expected: 100 USDC principal + 0.5 USDC base + Remint earned from dice rolls
 
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
@@ -338,10 +352,11 @@ contract SettlementRouterTest is Test {
         uint256 user1BalanceBefore = usdc.balanceOf(user1);
 
         vm.prank(user1);
-        // router.settleToCash(tokenId);
+        router.settleToCash(tokenId);
 
-        // uint256 actualAmount = usdc.balanceOf(user1) - user1BalanceBefore;
-        // assertGe(actualAmount, expectedAmount, "Should receive at least expected amount");
+        uint256 actualAmount = usdc.balanceOf(user1) - user1BalanceBefore;
+        uint256 expectedAmount = BOND_PRICE + BASE_YIELD; // 100.5 USDC minimum
+        assertGe(actualAmount, expectedAmount, "Should receive at least expected amount");
     }
 
     // ==================== Settlement Events Tests ====================
@@ -350,29 +365,28 @@ contract SettlementRouterTest is Test {
      * @notice [Functional] Should emit SettledToVeNFT event
      */
     function test_Functional_EmitSettledToVeNFT_Event() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
-        // vm.expectEmit(true, true, true, true);
-        // emit SettlementRouter.SettledToVeNFT(user1, tokenId, veNFTTokenId, hydAmount, lockDuration);
+        // Note: Event emission testing requires exact values which we'll verify via logs
 
         vm.prank(user1);
-        // router.settleToVeNFT(tokenId, 365 days);
+        router.settleToVeNFT(tokenId, 365 days);
     }
 
     /**
      * @notice [Functional] Should emit SettledToCash event
      */
     function test_Functional_EmitSettledToCash_Event() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
@@ -381,7 +395,7 @@ contract SettlementRouterTest is Test {
         // emit SettlementRouter.SettledToCash(user1, tokenId, totalAmount);
 
         vm.prank(user1);
-        // router.settleToCash(tokenId);
+        router.settleToCash(tokenId);
     }
 
     // ==================== Security Tests ====================
@@ -404,22 +418,22 @@ contract SettlementRouterTest is Test {
      * @notice [Security] Should prevent double settlement of same NFT
      */
     function test_Security_PreventDoubleSettlement() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
         // Settle to veNFT first
         vm.prank(user1);
-        // router.settleToVeNFT(tokenId, 365 days);
+        router.settleToVeNFT(tokenId, 365 days);
 
         // Try to settle again (should fail because NFT is burned)
         vm.prank(user1);
         vm.expectRevert(); // NFT no longer exists
-        // router.settleToCash(tokenId);
+        router.settleToCash(tokenId);
     }
 
     // ==================== Compatibility Tests ====================
@@ -428,29 +442,29 @@ contract SettlementRouterTest is Test {
      * @notice [Compatibility] Should work with multiple users settling different NFTs
      */
     function test_Compatibility_MultipleUsersSettlement() public {
-        bondNFT.unpause();
-
         // User1 mints and settles to veNFT
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId1 = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId1 = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         // User2 mints and settles to cash
         vm.startPrank(user2);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId2 = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId2 = bondNFT.tokenOfOwnerByIndex(user2, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
         // User1 settles to veNFT
         vm.prank(user1);
-        // router.settleToVeNFT(tokenId1, 365 days);
+        router.settleToVeNFT(tokenId1, 365 days);
 
         // User2 settles to cash
         vm.prank(user2);
-        // router.settleToCash(tokenId2);
+        router.settleToCash(tokenId2);
 
         // Both should succeed independently
     }
@@ -459,20 +473,19 @@ contract SettlementRouterTest is Test {
      * @notice [Compatibility] Should maintain Bond NFT contract state correctly
      */
     function test_Compatibility_BondNFTState() public {
-        bondNFT.unpause();
         vm.startPrank(user1);
         usdc.approve(address(bondNFT), BOND_PRICE);
-        uint256 tokenId = bondNFT.mint();
+        bondNFT.mint(1);
+        uint256 tokenId = bondNFT.tokenOfOwnerByIndex(user1, 0);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 90 days);
 
-        // uint256 totalSupplyBefore = bondNFT.totalSupply();
-
         vm.prank(user1);
-        // router.settleToVeNFT(tokenId, 365 days);
+        router.settleToVeNFT(tokenId, 365 days);
 
-        // Verify total supply decreased by 1 (NFT burned)
-        // assertEq(bondNFT.totalSupply(), totalSupplyBefore - 1, "Total supply should decrease");
+        // Verify NFT was burned (ownerOf should revert)
+        vm.expectRevert();
+        bondNFT.ownerOf(tokenId);
     }
 }

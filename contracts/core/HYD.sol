@@ -40,6 +40,9 @@ contract HYD is ERC20, ERC20Burnable, Pausable, Ownable {
     /// @dev Only this address can mint/burn HYD tokens for gas optimization
     address public immutable PSM;
 
+    /// @notice Mapping of authorized minters (PSM + authorized contracts like SettlementRouter)
+    mapping(address => bool) public authorizedMinters;
+
     /// @notice Mapping of addresses with pauser role
     mapping(address => bool) private _pausers;
 
@@ -64,19 +67,22 @@ contract HYD is ERC20, ERC20Burnable, Pausable, Ownable {
 
         PSM = psm;
 
+        // Authorize PSM as default minter
+        authorizedMinters[psm] = true;
+
         // Grant roles to deployer
         _pausers[msg.sender] = true;
         _blacklisters[msg.sender] = true;
     }
 
     /**
-     * @notice Mint new HYD tokens (PSM-only)
-     * @dev Only callable by PSM contract for security
+     * @notice Mint new HYD tokens (authorized minters only)
+     * @dev Only callable by PSM or authorized minters for security
      * @param to Recipient address
      * @param amount Amount of tokens to mint
      */
     function mint(address to, uint256 amount) external whenNotPaused {
-        require(msg.sender == PSM, "HYD: Only PSM can mint");
+        require(authorizedMinters[msg.sender], "HYD: Only authorized minters can mint");
         _mint(to, amount);
     }
 
@@ -161,6 +167,26 @@ contract HYD is ERC20, ERC20Burnable, Pausable, Ownable {
             return _blacklisters[account];
         }
         return false;
+    }
+
+    /**
+     * @notice Authorize an address to mint HYD tokens
+     * @dev Only owner can authorize minters (for contracts like SettlementRouter)
+     * @param minter Address to authorize
+     */
+    function authorizeMinter(address minter) external onlyOwner {
+        require(minter != address(0), "HYD: Cannot authorize zero address");
+        authorizedMinters[minter] = true;
+    }
+
+    /**
+     * @notice Revoke minting authorization from an address
+     * @dev Only owner can revoke. Cannot revoke PSM.
+     * @param minter Address to revoke authorization from
+     */
+    function revokeMinter(address minter) external onlyOwner {
+        require(minter != PSM, "HYD: Cannot revoke PSM");
+        authorizedMinters[minter] = false;
     }
 
     /**
