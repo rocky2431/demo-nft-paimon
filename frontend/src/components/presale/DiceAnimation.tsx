@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Paper, keyframes, Typography } from '@mui/material';
+import { Box, keyframes } from '@mui/material';
 import { useState, useEffect } from 'react';
 
 /**
@@ -14,126 +14,111 @@ interface DiceAnimationProps {
   isRolling: boolean;
 }
 
-// Simple 2D rotation animation - clean and professional
+// Clean rotation animation - simple and professional
 const rollAnimation = keyframes`
   0% {
-    transform: rotate(0deg) scale(1);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.1);
+    transform: rotateY(0deg);
   }
   100% {
-    transform: rotate(360deg) scale(1);
-  }
-`;
-
-// Fade in animation for result
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
+    transform: rotateY(360deg);
   }
 `;
 
 /**
- * Clean Dice Animation Component
- * Material Design 3 compliant with subtle animations
+ * Dice Animation Component
+ * Clean rotation without excessive effects
  */
 export function DiceAnimation({ type, result, isRolling }: DiceAnimationProps) {
-  const [displayNumber, setDisplayNumber] = useState<number | string>(1);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [displayNumber, setDisplayNumber] = useState(1);
 
   // Update display number when rolling stops
   useEffect(() => {
     if (!isRolling && result) {
-      setIsAnimating(true);
       setDisplayNumber(result);
-      setTimeout(() => setIsAnimating(false), 300);
     }
   }, [isRolling, result]);
 
   // Get dice color based on type (warm colors only)
-  const getDiceConfig = () => {
+  const getDiceColor = () => {
     switch (type) {
       case 'NORMAL':
-        return {
-          gradient: 'linear-gradient(135deg, #FF8C00 0%, #FF6347 100%)', // Orange to Tomato
-          label: 'Normal Dice',
-          range: '1-6',
-        };
+        return 'linear-gradient(135deg, #FF8C00 0%, #FF6347 100%)'; // Orange to Tomato
       case 'GOLD':
-        return {
-          gradient: 'linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)', // Gold to Orange
-          label: 'Gold Dice',
-          range: '1-12',
-        };
+        return 'linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)'; // Gold to Orange
       case 'DIAMOND':
-        return {
-          gradient: 'linear-gradient(135deg, #FF6347 0%, #DC143C 100%)', // Tomato to Crimson
-          label: 'Diamond Dice',
-          range: '1-20',
-        };
+        return 'linear-gradient(135deg, #FF6347 0%, #DC143C 100%)'; // Tomato to Crimson
       default:
-        return {
-          gradient: 'linear-gradient(135deg, #FF8C00 0%, #FF6347 100%)',
-          label: 'Normal Dice',
-          range: '1-6',
-        };
+        return 'linear-gradient(135deg, #FF8C00 0%, #FF6347 100%)';
     }
   };
 
-  const config = getDiceConfig();
+  // Get max value for dice type
+  const getMaxValue = () => {
+    switch (type) {
+      case 'NORMAL':
+        return 6;
+      case 'GOLD':
+        return 12;
+      case 'DIAMOND':
+        return 20;
+      default:
+        return 6;
+    }
+  };
 
   return (
     <Box
       sx={{
+        perspective: '1000px',
         display: 'flex',
-        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '280px',
-        gap: 3,
+        minHeight: '300px',
       }}
     >
-      {/* Dice Type Label */}
-      <Typography variant="h6" fontWeight={600} color="text.secondary">
-        {config.label} ({config.range})
-      </Typography>
-
-      {/* Dice Container */}
-      <Paper
-        elevation={isRolling ? 8 : 4}
+      <Box
         sx={{
-          width: '160px',
-          height: '160px',
-          background: config.gradient,
-          borderRadius: '16px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          animation: isRolling ? `${rollAnimation} 1s ease-in-out infinite` : 'none',
-          transition: 'all 0.3s ease',
-          cursor: 'default',
-          userSelect: 'none',
+          width: '150px',
+          height: '150px',
+          position: 'relative',
+          transformStyle: 'preserve-3d',
+          animation: isRolling ? `${rollAnimation} 1s linear infinite` : 'none',
+          transition: 'transform 0.5s ease',
         }}
       >
-        <Typography
-          variant="h1"
+        {/* Dice Face */}
+        <Box
           sx={{
-            fontSize: '72px',
-            fontWeight: 700,
+            width: '100%',
+            height: '100%',
+            background: getDiceColor(),
+            borderRadius: '15px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            fontSize: '64px',
+            fontWeight: 'bold',
             color: '#fff',
-            textShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-            animation: isAnimating ? `${fadeIn} 0.3s ease-out` : 'none',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
           }}
         >
           {isRolling ? '?' : displayNumber}
-        </Typography>
-      </Paper>
+        </Box>
+      </Box>
+
+      {/* Dice Type Label */}
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: -40,
+          fontSize: '14px',
+          fontWeight: 'bold',
+          color: '#666',
+          textAlign: 'center',
+        }}
+      >
+        {type} (1-{getMaxValue()})
+      </Box>
     </Box>
   );
 }

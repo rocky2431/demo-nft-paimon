@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { DiceAnimation } from './DiceAnimation';
+import { DiceTypeDisplay } from './DiceTypeDisplay';
 import { RollCooldownTimer } from './RollCooldownTimer';
 import { useRollDice } from './hooks/useRollDice';
 
@@ -86,6 +87,9 @@ export function DiceRoller() {
 
       {/* Always show dice (demo mode) */}
       <>
+        {/* Dice Type Display */}
+        <DiceTypeDisplay type={tokenId ? diceType : 'GOLD'} />
+
         {/* Dice Animation */}
         <Card sx={{ mt: 3, mb: 3, boxShadow: 3 }}>
           <CardContent>

@@ -11,7 +11,7 @@ interface DiceTypeDisplayProps {
 
 /**
  * Dice Type Display Component
- * Shows current dice type with icon and color
+ * Shows current dice type with icon and color (warm colors only)
  */
 export function DiceTypeDisplay({ type }: DiceTypeDisplayProps) {
   const getTypeConfig = () => {
@@ -20,7 +20,7 @@ export function DiceTypeDisplay({ type }: DiceTypeDisplayProps) {
         return {
           label: 'Normal Dice',
           icon: <Casino />,
-          color: '#7CB342', // Green
+          color: '#FF8C00', // Orange
           range: '1-6',
           description: 'Basic dice roll',
         };
@@ -36,7 +36,7 @@ export function DiceTypeDisplay({ type }: DiceTypeDisplayProps) {
         return {
           label: 'Diamond Dice',
           icon: <Diamond />,
-          color: '#9C27B0', // Purple
+          color: '#DC143C', // Crimson
           range: '1-20',
           description: 'Premium dice roll',
         };
