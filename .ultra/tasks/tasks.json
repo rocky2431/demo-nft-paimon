@@ -12,10 +12,10 @@
   },
   "stats": {
     "total": 51,
-    "pending": 23,
+    "pending": 22,
     "in_progress": 0,
     "blocked": 0,
-    "completed": 28,
+    "completed": 29,
     "cancelled": 0,
     "by_priority": {
       "P0": 30,
@@ -1062,7 +1062,7 @@
       "priority": "P0",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "chainlink-vrf",
@@ -1080,7 +1080,10 @@
         "Test coverage >90% (including mock VRF for unit tests)"
       ],
       "technical_notes": "BSC VRF Coordinator V2: Testnet 0x6A2AAd07396B36Fe02a22b33cf443582f682c82f, Mainnet 0xc587d9053cd1118f25F645F9E08BB98c9712A4EE. Create subscription via VRF UI. Fund with 10 LINK (testnet) or 100 LINK (mainnet). Request config: keyHash (BSC 200 gwei gas lane), callbackGasLimit 200000, requestConfirmations 3, numWords 1. Storage: mapping(uint256 requestId => uint256 tokenId). Callback: extract random number, calculate dice result (randomness % maxDiceValue + 1), update NFT's Remint yield, emit DiceRolled(tokenId, result, remintAmount).",
-      "reference": "https://docs.chain.link/vrf/v2/subscription/supported-networks#bnb-chain-mainnet, .ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md"
+      "reference": "https://docs.chain.link/vrf/v2/subscription/supported-networks#bnb-chain-mainnet, .ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md",
+      "startedAt": "2025-10-26T16:45:00Z",
+      "completedAt": "2025-10-26T17:15:00Z",
+      "actualDays": 0.5
     },
     {
       "id": "PRESALE-005",
