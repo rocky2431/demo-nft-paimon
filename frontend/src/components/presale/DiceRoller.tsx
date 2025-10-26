@@ -20,8 +20,6 @@ export function DiceRoller() {
   const { tokenId, diceData, rollResult, canRoll, rollDice, isRolling, isSuccess, error, txHash } = useRollDice();
 
   const [showConfetti, setShowConfetti] = useState(false);
-  const [demoRolling, setDemoRolling] = useState(false);
-  const [demoResult, setDemoResult] = useState<number | undefined>(undefined);
   const { width, height } = useWindowSize();
 
   // Map contract dice type (0,1,2) to component type
@@ -34,32 +32,18 @@ export function DiceRoller() {
 
   // Show confetti for high rolls
   useEffect(() => {
-    const result = rollResult?.result || demoResult;
-    if (result) {
+    if (rollResult?.result) {
       const isHighRoll =
-        (diceType === 'DIAMOND' && result > 15) ||
-        (diceType === 'GOLD' && result > 10) ||
-        (diceType === 'NORMAL' && result === 6);
+        (diceType === 'DIAMOND' && rollResult.result > 15) ||
+        (diceType === 'GOLD' && rollResult.result > 10) ||
+        (diceType === 'NORMAL' && rollResult.result === 6);
 
       if (isHighRoll) {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 5000);
       }
     }
-  }, [rollResult, demoResult, diceType]);
-
-  // Demo roll handler (for users without NFT)
-  const handleDemoRoll = () => {
-    setDemoRolling(true);
-    setDemoResult(undefined);
-
-    // Simulate 1.5s roll animation
-    setTimeout(() => {
-      const randomResult = Math.floor(Math.random() * 12) + 1; // 1-12 for GOLD dice
-      setDemoResult(randomResult);
-      setDemoRolling(false);
-    }, 1500);
-  };
+  }, [rollResult, diceType]);
 
   // Get BSCScan link
   const getBscScanLink = (hash: string) => {
@@ -80,85 +64,77 @@ export function DiceRoller() {
 
       {/* No NFT Warning */}
       {!tokenId && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Demo Mode: You can see the dice animation! Mint Bond NFTs to actually roll and earn rewards.
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          You don't own any Bond NFTs. Please mint NFTs first to use the dice rolling feature.
         </Alert>
       )}
 
-      {/* Always show dice (demo mode) */}
-      <>
-        {/* Dice Type Display */}
-        <DiceTypeDisplay type={tokenId ? diceType : 'GOLD'} />
+      {tokenId && (
+        <>
+          {/* Dice Type Display */}
+          <DiceTypeDisplay type={diceType} />
 
-        {/* Dice Animation */}
-        <Card sx={{ mt: 3, mb: 3, boxShadow: 3 }}>
-          <CardContent>
-            <DiceAnimation
-              type={tokenId ? diceType : 'GOLD'}
-              result={rollResult?.result || demoResult}
-              isRolling={isRolling || demoRolling}
-            />
-          </CardContent>
-        </Card>
+          {/* Dice Animation */}
+          <Card sx={{ mt: 3, mb: 3, boxShadow: 3 }}>
+            <CardContent>
+              <DiceAnimation
+                type={diceType}
+                result={rollResult?.result}
+                isRolling={isRolling}
+              />
+            </CardContent>
+          </Card>
 
-        {/* Cooldown Timer */}
-        {tokenId && diceData && diceData.lastRollTimestamp > 0 && (
-          <RollCooldownTimer lastRollTimestamp={diceData.lastRollTimestamp} />
-        )}
+          {/* Cooldown Timer */}
+          {diceData && diceData.lastRollTimestamp > 0 && (
+            <RollCooldownTimer lastRollTimestamp={diceData.lastRollTimestamp} />
+          )}
 
-        {/* Roll Button */}
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Button
-            variant="contained"
-            size="large"
-            disabled={tokenId ? (!canRoll || isRolling) : demoRolling}
-            onClick={!tokenId ? handleDemoRoll : rollDice}
-            startIcon={(isRolling || demoRolling) ? <CircularProgress size={20} color="inherit" /> : <Casino />}
-            sx={{
-              px: 6,
-              py: 2,
-              fontSize: '18px',
-              fontWeight: 'bold',
-              background: (tokenId && !canRoll) ? '#ccc' : 'linear-gradient(90deg, #FF8C00 0%, #FF6347 100%)',
-              '&:hover': {
-                background: (tokenId && !canRoll) ? '#ccc' : 'linear-gradient(90deg, #FF6347 0%, #FF4500 100%)',
-              },
-            }}
-          >
-            {!tokenId
-              ? (demoRolling ? 'Rolling Demo...' : 'Try Demo Roll')
-              : (isRolling ? 'Rolling...' : canRoll ? 'Roll Dice' : 'Cooldown Active')}
-          </Button>
-        </Box>
+          {/* Roll Button */}
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Button
+              variant="contained"
+              size="large"
+              disabled={!canRoll || isRolling}
+              onClick={rollDice}
+              startIcon={isRolling ? <CircularProgress size={20} color="inherit" /> : <Casino />}
+              sx={{
+                px: 6,
+                py: 2,
+                fontSize: '18px',
+                fontWeight: 'bold',
+                background: canRoll ? 'linear-gradient(90deg, #FF8C00 0%, #FF6347 100%)' : '#ccc',
+                '&:hover': {
+                  background: canRoll ? 'linear-gradient(90deg, #FF6347 0%, #FF4500 100%)' : '#ccc',
+                },
+              }}
+            >
+              {isRolling ? 'Rolling...' : canRoll ? 'Roll Dice' : 'Cooldown Active'}
+            </Button>
+          </Box>
 
           {/* Result Display */}
-          {(rollResult || demoResult) && (
+          {rollResult && (
             <Card sx={{ mt: 3, background: 'linear-gradient(135deg, #FFF9E6 0%, #FFE8CC 100%)', boxShadow: 3 }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                   <CheckCircle color="success" sx={{ fontSize: '32px' }} />
                   <Typography variant="h5" fontWeight="bold" sx={{ whiteSpace: 'nowrap' }}>
-                    {demoResult ? 'Demo Result' : 'Roll Result'}
+                    Roll Result
                   </Typography>
                 </Box>
 
                 <Typography variant="h2" fontWeight="bold" color="primary" textAlign="center" sx={{ my: 3 }}>
-                  {rollResult?.result || demoResult}
+                  {rollResult.result}
                 </Typography>
 
-                {demoResult && demoResult > 10 && (
-                  <Alert severity="success" sx={{ mb: 2 }}>
-                    🎉 Great demo roll! You got {demoResult}/12 on Gold dice!
-                  </Alert>
-                )}
-
-                {rollResult?.result && rollResult.result > 15 && diceType === 'DIAMOND' && (
+                {rollResult.result && rollResult.result > 15 && diceType === 'DIAMOND' && (
                   <Alert severity="success" sx={{ mb: 2 }}>
                     🎉 Amazing roll! You got {rollResult.result}/20 on Diamond dice!
                   </Alert>
                 )}
 
-                {rollResult?.remintAmount && (
+                {rollResult.remintAmount && (
                   <Typography variant="body1" textAlign="center" color="text.secondary">
                     Remint Earned: {rollResult.remintAmount.toString()} USDC
                   </Typography>
