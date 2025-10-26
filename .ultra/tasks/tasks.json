@@ -1035,7 +1035,7 @@
       "priority": "P0",
       "complexity": 7,
       "estimated_days": 4,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "presale",
