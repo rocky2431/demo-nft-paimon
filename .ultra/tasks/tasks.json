@@ -1304,7 +1304,7 @@
       "priority": "P1",
       "complexity": 8,
       "estimated_days": 5,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "ui",
@@ -1329,7 +1329,10 @@
         "TypeScript 0 errors"
       ],
       "technical_notes": "Use Three.js for 3D dice rolling or Lottie for pre-rendered animations. Components: DiceRoller3D (Three.js canvas), DiceTypeIndicator, RollButton (disabled if cooldown active), ResultReveal (animated number counter), RemintEarningsDisplay, ShareButton. Dice models: 6-sided (Normal), 12-sided (Gold), 20-sided (Diamond). wagmi integration: useWriteContract for rollDice(), useWatchContractEvent for DiceRolled event. Confetti library: react-confetti. Route: /presale/dice. Bond Doge mascot appears with different expressions based on result (placeholder for designer).",
-      "reference": "https://threejs.org/, https://lottiefiles.com/"
+      "reference": "https://threejs.org/, https://lottiefiles.com/",
+      "startedAt": "2025-10-26T11:04:43.990Z",
+      "completedAt": "2025-10-26T12:15:23.137Z",
+      "actualDays": 0.5
     },
     {
       "id": "PRESALE-012",
