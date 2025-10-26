@@ -1099,7 +1099,7 @@
       "priority": "P0",
       "complexity": 7,
       "estimated_days": 4,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "backend",
         "oracle",
@@ -1120,7 +1120,10 @@
         "API uptime >99%"
       ],
       "technical_notes": "Tech stack: Node.js + Express + PostgreSQL. Twitter API v2: use OAuth 2.0, endpoints: GET /users/by/username, GET /tweets (filter by user mentions). Discord API: use Bot token, endpoints: GET /guilds/{guild_id}/members/{user_id}, POST /channels/{channel_id}/messages. Referral system: generate unique codes (nanoid 8 chars), track clicks and conversions. EIP-712 signature: domain { name: 'PaimonBondNFT', version: '1', chainId: 56/97, verifyingContract: RemintController }, types: TaskVerification { tokenId, taskId, completedAt, nonce }. Oracle private key stored in AWS KMS or similar. Expose REST API: POST /verify-task { tokenId, taskId, proof (Twitter ID / Discord ID / Referral code) } → returns { signature, nonce }. Frontend calls oracle, then submits signature to RemintController.completeTask().",
-      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md"
+      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md",
+      "started_at": "2025-10-26T18:00:00Z",
+      "completedAt": "2025-10-26T10:59:21.788Z",
+      "actualDays": 0.5
     },
     {
       "id": "PRESALE-006",
