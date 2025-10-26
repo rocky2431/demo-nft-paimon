@@ -15,27 +15,25 @@ export default function PresaleMintPage() {
       <Navigation activePage="presale" />
 
       {/* Main content area */}
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            pt: 12, // Account for fixed navbar
-            pb: 8,
-            px: {
-              xs: 2,
-              sm: 3,
-            },
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #FFF9E6 0%, #FFE8CC 100%)', // Warm gradient
-          }}
-        >
-          {/* Huge whitespace (OlympusDAO style) */}
-          <Box sx={{ height: { xs: 40, sm: 60 } }} />
+      <Container
+        maxWidth="lg"
+        sx={{
+          pt: 12, // Account for fixed navbar
+          pb: 8,
+          px: {
+            xs: 2,
+            sm: 3,
+          },
+          minHeight: '100vh',
+        }}
+      >
+        {/* Huge whitespace (OlympusDAO style) */}
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
 
-          {/* Spacer to match VoteTabs/LiquidityTabs height for consistent card position */}
-          <Box sx={{ height: 80, mb: 0 }} />
+        {/* Spacer to match VoteTabs/LiquidityTabs height for consistent card position */}
+        <Box sx={{ height: 80, mb: 0 }} />
 
-          <MintInterface />
-        </Box>
+        <MintInterface />
       </Container>
     </Box>
   );
