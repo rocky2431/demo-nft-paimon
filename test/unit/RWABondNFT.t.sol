@@ -310,9 +310,89 @@ contract RWABondNFTTest is Test {
         bondNFT.mint(1);
 
         // Default tier should be Bronze (accumulatedRemint = 0)
+        string memory rarity = bondNFT.getRarityTier(1);
+        assertEq(rarity, "Bronze", "Tier should be Bronze for 0 Remint");
+
         string memory uri = bondNFT.tokenURI(1);
         assertTrue(bytes(uri).length > 0, "TokenURI should not be empty");
-        // Note: Actual JSON parsing would be done in integration tests
+    }
+
+    function test_Rarity_SilverTier() public {
+        vm.prank(user1);
+        bondNFT.mint(1);
+
+        // Set accumulatedRemint to 2 USDC (Silver threshold)
+        _setAccumulatedRemint(1, 2 * 1e6);
+
+        string memory rarity = bondNFT.getRarityTier(1);
+        assertEq(rarity, "Silver", "Tier should be Silver for 2 USDC Remint");
+
+        // Verify tokenURI is generated (detailed format validation in test_OpenSea_Compatibility)
+        string memory uri = bondNFT.tokenURI(1);
+        assertTrue(bytes(uri).length > 0, "TokenURI should not be empty");
+    }
+
+    function test_Rarity_GoldTier() public {
+        vm.prank(user1);
+        bondNFT.mint(1);
+
+        // Set accumulatedRemint to 4 USDC (Gold threshold)
+        _setAccumulatedRemint(1, 4 * 1e6);
+
+        string memory rarity = bondNFT.getRarityTier(1);
+        assertEq(rarity, "Gold", "Tier should be Gold for 4 USDC Remint");
+
+        string memory uri = bondNFT.tokenURI(1);
+        assertTrue(bytes(uri).length > 0, "TokenURI should not be empty");
+    }
+
+    function test_Rarity_DiamondTier() public {
+        vm.prank(user1);
+        bondNFT.mint(1);
+
+        // Set accumulatedRemint to 6 USDC (Diamond threshold)
+        _setAccumulatedRemint(1, 6 * 1e6);
+
+        string memory rarity = bondNFT.getRarityTier(1);
+        assertEq(rarity, "Diamond", "Tier should be Diamond for 6 USDC Remint");
+
+        string memory uri = bondNFT.tokenURI(1);
+        assertTrue(bytes(uri).length > 0, "TokenURI should not be empty");
+    }
+
+    function test_Rarity_LegendaryTier() public {
+        vm.prank(user1);
+        bondNFT.mint(1);
+
+        // Set accumulatedRemint to 8 USDC (Legendary threshold)
+        _setAccumulatedRemint(1, 8 * 1e6);
+
+        string memory rarity = bondNFT.getRarityTier(1);
+        assertEq(rarity, "Legendary", "Tier should be Legendary for 8+ USDC Remint");
+
+        string memory uri = bondNFT.tokenURI(1);
+        assertTrue(bytes(uri).length > 0, "TokenURI should not be empty");
+    }
+
+    function test_Rarity_BoundaryTransitions() public {
+        vm.prank(user1);
+        bondNFT.mint(1);
+
+        // Test boundary: 1.99 USDC should be Bronze
+        _setAccumulatedRemint(1, 1.99 * 1e6);
+        assertEq(bondNFT.getRarityTier(1), "Bronze", "1.99 USDC should be Bronze");
+
+        // Test boundary: exactly 2 USDC should be Silver
+        _setAccumulatedRemint(1, 2 * 1e6);
+        assertEq(bondNFT.getRarityTier(1), "Silver", "2 USDC should be Silver");
+
+        // Test boundary: 3.99 USDC should be Silver
+        _setAccumulatedRemint(1, 3.99 * 1e6);
+        assertEq(bondNFT.getRarityTier(1), "Silver", "3.99 USDC should be Silver");
+
+        // Test boundary: exactly 4 USDC should be Gold
+        _setAccumulatedRemint(1, 4 * 1e6);
+        assertEq(bondNFT.getRarityTier(1), "Gold", "4 USDC should be Gold");
     }
 
     function test_Name() public view {
@@ -562,5 +642,69 @@ contract RWABondNFTTest is Test {
         assertTrue(bytes(name).length > 0, "Name should not be empty");
         assertTrue(bytes(symbol).length > 0, "Symbol should not be empty");
         assertTrue(bytes(uri).length > 0, "TokenURI should not be empty");
+    }
+
+    // ==================== Test Helper Functions ====================
+
+    /**
+     * @notice Set accumulatedRemint for testing metadata tiers
+     * @dev Uses vm.store to directly modify contract storage
+     */
+    function _setAccumulatedRemint(uint256 tokenId, uint128 amount) internal {
+        // BondInfo struct layout in storage:
+        // _bondInfo[tokenId] => {
+        //   uint128 principal (slot 0, bytes 0-15)
+        //   uint64 mintTime (slot 0, bytes 16-23)
+        //   uint64 maturityDate (slot 0, bytes 24-31)
+        //   uint128 accumulatedRemint (slot 1, bytes 0-15)
+        //   uint8 diceType (slot 1, byte 16)
+        // }
+
+        // Get the storage slot for _bondInfo mapping
+        // _bondInfo is at storage slot 16 (verified with forge inspect storage-layout)
+        bytes32 bondInfoSlot = bytes32(uint256(16));
+
+        // Calculate storage location: keccak256(abi.encode(tokenId, bondInfoSlot)) + 1 (for slot 1 of struct)
+        bytes32 slot = keccak256(abi.encode(tokenId, bondInfoSlot));
+        bytes32 slot1 = bytes32(uint256(slot) + 1);
+
+        // Read current value at slot 1
+        bytes32 currentValue = vm.load(address(bondNFT), slot1);
+
+        // Preserve diceType (byte 16) and clear accumulatedRemint (bytes 0-15)
+        bytes32 preserved = currentValue & bytes32(uint256(0xFFFFFFFFFFFFFFFF << 128));
+
+        // Set new accumulatedRemint value (bytes 0-15)
+        bytes32 newValue = preserved | bytes32(uint256(amount));
+
+        vm.store(address(bondNFT), slot1, newValue);
+    }
+
+    /**
+     * @notice Check if a string contains a substring
+     * @dev Simple string contains check for testing
+     */
+    function _contains(string memory str, string memory substr) internal pure returns (bool) {
+        bytes memory strBytes = bytes(str);
+        bytes memory substrBytes = bytes(substr);
+
+        if (substrBytes.length == 0 || strBytes.length < substrBytes.length) {
+            return false;
+        }
+
+        for (uint256 i = 0; i <= strBytes.length - substrBytes.length; i++) {
+            bool found = true;
+            for (uint256 j = 0; j < substrBytes.length; j++) {
+                if (strBytes[i + j] != substrBytes[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
