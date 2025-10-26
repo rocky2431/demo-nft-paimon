@@ -18,7 +18,8 @@ export default function BribesPage() {
       <Navigation activePage="vote" />
 
       {/* Main content area */}
-      <Box
+      <Container
+        maxWidth="lg"
         sx={{
           pt: 12, // Account for fixed navbar
           pb: 8,
@@ -29,22 +30,18 @@ export default function BribesPage() {
           minHeight: '100vh',
         }}
       >
-        <Container maxWidth="lg">
-          {/* Huge whitespace (OlympusDAO style) */}
-          <Box sx={{ height: { xs: 40, sm: 60 } }} />
+        {/* Huge whitespace (OlympusDAO style) */}
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
 
-          {/* Vote sub-navigation tabs */}
-          <VoteTabs activeTab="bribes" />
-        </Container>
+        {/* Vote sub-navigation tabs */}
+        <VoteTabs activeTab="bribes" />
 
-        {/* Bribes Marketplace - full width */}
+        {/* Bribes Marketplace */}
         <BribesMarketplace />
 
-        <Container maxWidth="lg">
-          {/* Huge whitespace (OlympusDAO style) */}
-          <Box sx={{ height: { xs: 40, sm: 60 } }} />
-        </Container>
-      </Box>
+        {/* Huge whitespace (OlympusDAO style) */}
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
+      </Container>
     </Box>
   );
 }
