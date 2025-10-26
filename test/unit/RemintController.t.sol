@@ -81,6 +81,7 @@ contract RemintControllerTest is Test {
     bytes32 public constant TASK_REFERRAL_1 = keccak256("REFERRAL_1");
     bytes32 public constant TASK_REFERRAL_5 = keccak256("REFERRAL_5");
     bytes32 public constant TASK_REFERRAL_10 = keccak256("REFERRAL_10");
+    bytes32 public constant TASK_YOUTUBE_SUBSCRIBE = keccak256("YOUTUBE_SUBSCRIBE");
 
     // Referral rewards (in USDC, 6 decimals)
     uint256 public constant REFERRAL_REWARD = 5 * 1e6; // 5 USDC per invite
@@ -158,6 +159,10 @@ contract RemintControllerTest is Test {
         bondNFT.mint(1); // tokenId 2
         vm.prank(user3);
         bondNFT.mint(1); // tokenId 3
+
+        // Fund RemintController with USDC for referral rewards
+        // Assuming max 100 referrals @ 5 USDC each = 500 USDC
+        usdc.mint(address(remintController), 500 * 1e6);
     }
 
     // ==================== 1. FUNCTIONAL TESTS ====================
@@ -627,13 +632,19 @@ contract RemintControllerTest is Test {
     // ==================== 3. EXCEPTION TESTS ====================
 
     function test_Exception_RollDice_ZeroTokenId() public {
-        vm.expectRevert("ERC721: invalid token ID");
+        // OpenZeppelin ERC721 uses custom error: ERC721NonexistentToken(uint256 tokenId)
+        vm.expectRevert(
+            abi.encodeWithSelector(bytes4(keccak256("ERC721NonexistentToken(uint256)")), 0)
+        );
         vm.prank(user1);
         remintController.rollDice(0);
     }
 
     function test_Exception_RollDice_NonexistentToken() public {
-        vm.expectRevert("ERC721: invalid token ID");
+        // OpenZeppelin ERC721 uses custom error: ERC721NonexistentToken(uint256 tokenId)
+        vm.expectRevert(
+            abi.encodeWithSelector(bytes4(keccak256("ERC721NonexistentToken(uint256)")), 999)
+        );
         vm.prank(user1);
         remintController.rollDice(999);
     }
@@ -833,10 +844,17 @@ contract RemintControllerTest is Test {
 
     /**
      * @notice Helper to build random words array for VRF fulfillment
+     * @dev Converts desired dice result to a randomWord that will produce that result
+     * Formula: result = (randomWord % maxDice) + 1
+     * Therefore: randomWord = result - 1 (when result >= 1)
+     * Example:
+     *   - For result=6 on Normal dice (max=6): randomWord=5, (5%6)+1=6 ✓
+     *   - For result=12 on Gold dice (max=12): randomWord=11, (11%12)+1=12 ✓
      */
     function _buildRandomWords(uint8 diceResult) internal pure returns (uint256[] memory) {
+        require(diceResult >= 1, "Dice result must be >= 1");
         uint256[] memory randomWords = new uint256[](1);
-        randomWords[0] = uint256(diceResult); // Simplified: use result directly
+        randomWords[0] = uint256(diceResult - 1);
         return randomWords;
     }
 
@@ -856,7 +874,7 @@ contract RemintControllerTest is Test {
      * @notice Helper to complete multiple social tasks
      */
     function _completeSocialTasks(uint256 tokenId, address owner, uint256 count) internal {
-        bytes32[9] memory allTasks = [
+        bytes32[10] memory allTasks = [
             TASK_TWITTER_FOLLOW,
             TASK_TWITTER_RETWEET,
             TASK_TWITTER_MEME,
@@ -865,12 +883,14 @@ contract RemintControllerTest is Test {
             TASK_DISCORD_AMA,
             TASK_REFERRAL_1,
             TASK_REFERRAL_5,
-            TASK_REFERRAL_10
+            TASK_REFERRAL_10,
+            TASK_YOUTUBE_SUBSCRIBE
         ];
 
-        require(count <= 9, "Max 9 tasks available");
+        // Complete up to the requested count (max 10 available tasks)
+        uint256 tasksToComplete = count > 10 ? 10 : count;
 
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i = 0; i < tasksToComplete; i++) {
             bytes memory sig = _createOracleSignature(tokenId, allTasks[i]);
             vm.prank(owner);
             remintController.completeSocialTask(tokenId, allTasks[i], sig);

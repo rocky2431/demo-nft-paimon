@@ -394,7 +394,8 @@ contract RWABondNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable2Step,
         require(!isMatured(tokenId), "RWABondNFT: bond has matured");
 
         BondInfo storage bond = _bondInfo[tokenId];
-        require(bond.weeklyRollsLeft > 0, "RWABondNFT: no rolls left this week");
+        // Note: Weekly roll limit is managed by RemintController
+        // No need to check or decrement here
 
         // Request random words from Chainlink VRF with error handling
         try this._requestRandomWordsExternal() returns (uint256 _requestId) {
@@ -402,9 +403,6 @@ contract RWABondNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable2Step,
 
             // Map requestId to tokenId for callback
             _vrfRequestToTokenId[requestId] = tokenId;
-
-            // Decrement weekly rolls
-            bond.weeklyRollsLeft--;
 
             emit DiceRolled(tokenId, requestId, bond.diceType);
         } catch Error(string memory reason) {

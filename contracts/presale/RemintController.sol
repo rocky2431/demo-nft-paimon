@@ -136,9 +136,10 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
 
         // Initialize dice data if first time
         if (dice.lastRollTimestamp == 0) {
-            dice.diceType = DICE_TYPE_NORMAL;
             dice.rollsThisWeek = 1; // 1 free roll per week
             dice.lastWeekNumber = _getCurrentWeekNumber();
+            // Note: diceType may already be upgraded via completeSocialTask
+            // Only initialize if still at default value (0 = NORMAL)
         } else {
             // Check if new week, reset rolls
             uint256 currentWeek = _getCurrentWeekNumber();
@@ -151,7 +152,8 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
 
         require(dice.rollsThisWeek > 0, "RemintController: no rolls left this week");
 
-        // Consume one roll (will be decremented after VRF fulfillment)
+        // Consume one roll immediately
+        dice.rollsThisWeek--;
         dice.lastRollTimestamp = block.timestamp;
 
         // Request VRF random number through BondNFT
@@ -186,13 +188,15 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
         // Calculate APY based on result
         uint256 apyBasisPoints = _calculateAPY(dice.diceType, result);
 
-        // Calculate Remint earned (for now, simplified - actual calculation would use time held)
-        // Remint = Principal × APY × (time held / 365 days)
-        // Simplified: We'll calculate based on 90-day period
+        // Calculate internal remint for tracking purposes (not immediately distributed)
+        // This is used to track potential earnings in totalRemintEarned
+        // Actual distribution happens at bond maturity
         uint256 principal = 100 * 1e6; // 100 USDC
-        uint256 remintEarned = (principal * apyBasisPoints * 90) / (10000 * 365);
+        uint256 internalRemint = (principal * apyBasisPoints * 90) / (10000 * 365);
+        dice.totalRemintEarned += internalRemint;
 
-        dice.totalRemintEarned += remintEarned;
+        // Event shows 0 for remintEarned as tokens are not distributed yet
+        uint256 remintEarned = 0;
 
         // Update highest dice roll for leaderboard
         if (result > dice.highestDiceRoll) {
