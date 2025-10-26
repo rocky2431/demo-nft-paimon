@@ -28,6 +28,12 @@ export default function PresaleMintPage() {
             background: 'linear-gradient(135deg, #FFF9E6 0%, #FFE8CC 100%)', // Warm gradient
           }}
         >
+          {/* Huge whitespace (OlympusDAO style) */}
+          <Box sx={{ height: { xs: 40, sm: 60 } }} />
+
+          {/* Spacer to match VoteTabs/LiquidityTabs height for consistent card position */}
+          <Box sx={{ height: 80, mb: 0 }} />
+
           <MintInterface />
         </Box>
       </Container>

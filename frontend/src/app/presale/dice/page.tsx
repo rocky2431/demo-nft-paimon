@@ -30,6 +30,12 @@ export default function PresaleDicePage() {
             background: 'linear-gradient(135deg, #FFF4E6 0%, #FFD7A3 100%)', // Warm golden gradient
           }}
         >
+          {/* Huge whitespace (OlympusDAO style) */}
+          <Box sx={{ height: { xs: 40, sm: 60 } }} />
+
+          {/* Spacer to match VoteTabs/LiquidityTabs height for consistent card position */}
+          <Box sx={{ height: 80, mb: 0 }} />
+
           <DiceRoller />
         </Box>
       </Container>
