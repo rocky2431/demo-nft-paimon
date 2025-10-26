@@ -303,6 +303,212 @@ function castVote(uint256 proposalId, uint256 veNFTId, bool support) external
 function executeProposal(uint256 proposalId) external
 ```
 
+#### 2.1.3 RWA Bond NFT Presale System
+
+**RWABondNFT.sol** (ERC-721 Dynamic NFT)
+```solidity
+// State Variables
+struct BondInfo {
+    uint128 principal;              // 100 USDC (6 decimals)
+    uint64 mintTime;                // Timestamp of mint
+    uint64 maturityDate;            // mintTime + 90 days
+    uint128 accumulatedRemint;      // Bonus yield from dice rolls
+    uint8 diceType;                 // 0=Normal, 1=Gold, 2=Diamond
+}
+mapping(uint256 => BondInfo) private _bondInfo;
+
+// Constants
+uint256 public constant MAX_SUPPLY = 5000;
+uint256 public constant MINT_PRICE = 100 * 1e6;  // 100 USDC
+uint256 public constant MATURITY_PERIOD = 90 days;
+uint256 public constant BASE_YIELD = 5 * 1e5;    // 0.5 USDC (2% APY)
+
+// Rarity Tier Thresholds (based on accumulated Remint)
+uint256 public constant BRONZE_THRESHOLD = 0;           // 0-2 USDC
+uint256 public constant SILVER_THRESHOLD = 2 * 1e6;     // 2-4 USDC
+uint256 public constant GOLD_THRESHOLD = 4 * 1e6;       // 4-6 USDC
+uint256 public constant DIAMOND_THRESHOLD = 6 * 1e6;    // 6-8 USDC
+uint256 public constant LEGENDARY_THRESHOLD = 8 * 1e6;  // 8+ USDC
+
+// Key Functions
+function mint(uint256 quantity) external nonReentrant
+function isMatured(uint256 tokenId) external view returns (bool)
+function calculateTotalYield(uint256 tokenId) external view returns (uint256)
+function getRarityTier(uint256 tokenId) external view returns (string memory)
+function tokenURI(uint256 tokenId) external view returns (string memory)
+function burn(uint256 tokenId) external  // Only SettlementRouter
+
+// Dynamic Metadata (OpenSea Compatible)
+// - Auto-updating rarity based on Remint earnings
+// - Base64-encoded JSON data URI
+// - 5 visual tiers with distinct artwork
+```
+
+**RemintController.sol** (Gamification Engine)
+```solidity
+// State Variables
+struct DiceData {
+    uint8 diceType;                 // 0=Normal, 1=Gold, 2=Diamond
+    uint8 rollsThisWeek;            // Remaining free rolls
+    uint256 lastRollTimestamp;      // Last roll time
+    uint256 totalRemintEarned;      // Cumulative Remint (USDC)
+    uint256 lastWeekNumber;         // Week tracking for resets
+    uint8 highestDiceRoll;          // Best single roll (for leaderboard)
+}
+mapping(uint256 => DiceData) private _diceData;
+mapping(uint256 => mapping(bytes32 => bool)) private _completedTasks;
+mapping(uint256 => uint256) private _tasksCompleted;
+
+// Constants
+uint256 public constant WEEK_DURATION = 7 days;
+uint256 public constant GOLD_DICE_TASKS = 5;      // Unlock Gold dice
+uint256 public constant DIAMOND_DICE_TASKS = 10;  // Unlock Diamond dice
+uint256 public constant NORMAL_DICE_MAX_APY = 300;    // 3%
+uint256 public constant GOLD_DICE_MAX_APY = 600;      // 6%
+uint256 public constant DIAMOND_DICE_MAX_APY = 1000;  // 10%
+uint256 public constant REFERRAL_REWARD = 5 * 1e6;    // 5 USDC
+
+// Key Functions
+function rollDice(uint256 tokenId) external nonReentrant returns (uint256 requestId)
+function completeSocialTask(uint256 tokenId, bytes32 taskId, bytes memory signature) external
+function getLeaderboard(uint8 boardType, uint256 limit) external view returns (address[] memory)
+function getRemintEarned(uint256 tokenId) external view returns (uint256)
+
+// Dice System
+// - Weekly rolls: 1 free + bonus from social tasks
+// - Three dice types: Normal (1-6), Gold (1-12), Diamond (1-20)
+// - APY mapping: (result / maxValue) * maxAPY
+// - Example: Normal dice roll 4 → (4/6) * 3% = 2% APY
+```
+
+**SettlementRouter.sol** (Dual-Option Settlement)
+```solidity
+// Immutable References
+RWABondNFT public immutable bondNFT;
+RemintController public immutable remintController;
+VotingEscrow public immutable votingEscrow;
+Treasury public immutable treasury;
+HYD public immutable hyd;
+
+// Constants
+uint256 public constant BOND_PRINCIPAL = 100 * 1e6;  // 100 USDC
+uint256 public constant BASE_YIELD = 5 * 1e5;        // 0.5 USDC
+uint256 public constant MIN_LOCK_DURATION = 90 days;
+uint256 public constant MAX_LOCK_DURATION = 1460 days;  // 4 years
+
+// Key Functions
+function settleToVeNFT(uint256 bondTokenId, uint256 lockDuration)
+    external nonReentrant returns (uint256 veNFTTokenId)
+function settleToCash(uint256 bondTokenId) external nonReentrant
+
+// Settlement Flow
+// 1. Validate maturity (bond.isMatured() == true)
+// 2. Calculate total: principal + base yield + Remint rewards
+// 3. Option 1 (veNFT): Convert USDC → HYD (1:1), lock in VotingEscrow
+//    Option 2 (Cash): Transfer USDC from Treasury to user
+// 4. Burn Bond NFT
+// 5. Emit settlement event
+```
+
+**VRFConfig.sol** (Chainlink VRF V2 Configuration)
+```solidity
+// BSC Mainnet (Chain ID: 56)
+address public constant BSC_MAINNET_VRF_COORDINATOR = 0xc587d9053cd1118f25F645F9E08BB98c9712A4EE;
+bytes32 public constant BSC_MAINNET_KEY_HASH = 0x114f3da0a805b6a67d6e9cd2ec746f7028f1b7376365af575cfea3550dd1aa04;
+
+// BSC Testnet (Chain ID: 97)
+address public constant BSC_TESTNET_VRF_COORDINATOR = 0x6A2AAd07396B36Fe02a22b33cf443582f682c82f;
+bytes32 public constant BSC_TESTNET_KEY_HASH = 0xd4bb89654db74673a187bd804519e65e3f71a52bc55f11da7601a13dcf505314;
+
+// Common Config
+uint16 public constant REQUEST_CONFIRMATIONS = 3;
+uint32 public constant CALLBACK_GAS_LIMIT = 200_000;
+uint32 public constant NUM_WORDS = 1;
+
+// Helper Functions
+function getCoordinator(uint256 chainId) internal pure returns (address)
+function getKeyHash(uint256 chainId) internal pure returns (bytes32)
+function validateConfig(address coordinator, bytes32 keyHash, uint64 subscriptionId) internal pure
+```
+
+**Presale Economics**:
+```
+Total Supply: 5,000 NFTs
+Mint Price: 100 USDC per NFT
+Total Raise: 500,000 USDC
+Maturity: 90 days from mint
+
+Base Yield: 2% APY = 0.5 USDC per NFT (fixed)
+Bonus Remint: 0-10+ USDC (variable, from dice rolling)
+
+Settlement Options:
+1. veNFT Conversion:
+   - 1 USDC = 1 HYD (1:1 conversion)
+   - Lock duration: 90 days - 4 years (customizable)
+   - User receives: veNFT with voting power
+
+2. Cash Redemption:
+   - Principal: 100 USDC
+   - Base Yield: 0.5 USDC
+   - Remint: 0-10+ USDC
+   - User receives: Total USDC to wallet
+```
+
+**Integration with VotingEscrow**:
+```solidity
+// contracts/core/VotingEscrow.sol (Enhanced)
+function createLockFromBondNFT(address user, uint256 hydAmount, uint256 lockDuration)
+    external nonReentrant returns (uint256)
+{
+    require(authorizedContracts[msg.sender], "VotingEscrow: caller is not authorized");
+    require(user != address(0), "VotingEscrow: zero user address");
+    require(hydAmount > 0, "VotingEscrow: amount must be > 0");
+    require(lockDuration >= MIN_BOND_LOCK_DURATION, "VotingEscrow: lock duration too short");
+    require(lockDuration <= MAX_BOND_LOCK_DURATION, "VotingEscrow: lock duration too long");
+
+    // Check HYD balance (pre-transferred by SettlementRouter)
+    require(token.balanceOf(address(this)) >= hydAmount, "VotingEscrow: insufficient HYD balance");
+
+    uint256 unlockTime = block.timestamp + lockDuration;
+    uint256 currentTokenId = tokenId;
+
+    locked[currentTokenId] = LockedBalance({
+        amount: uint128(hydAmount),
+        end: uint128(unlockTime)
+    });
+
+    _safeMint(user, currentTokenId);  // Mint to user, not caller
+    tokenId = currentTokenId + 1;
+
+    emit Deposit(user, currentTokenId, hydAmount, unlockTime, 0);
+    return currentTokenId;
+}
+```
+
+**Integration with Treasury**:
+```solidity
+// contracts/treasury/Treasury.sol (Enhanced)
+function receiveBondSales(uint256 usdcAmount) external whenNotPaused nonReentrant {
+    if (msg.sender != bondNFTContract) revert Unauthorized();
+    if (usdcAmount == 0) revert ZeroAmount();
+
+    totalBondSales += usdcAmount;
+    emit BondSalesReceived(usdcAmount, totalBondSales);
+}
+
+function fulfillRedemption(address user, uint256 amount) external whenNotPaused nonReentrant {
+    if (msg.sender != settlementRouter) revert Unauthorized();
+    if (user == address(0)) revert ZeroAddress();
+    if (amount == 0) revert ZeroAmount();
+
+    uint256 balance = usdcToken.balanceOf(address(this));
+    if (balance < amount) revert InsufficientBalance();
+
+    usdcToken.safeTransfer(user, amount);
+    emit RedemptionFulfilled(user, amount);
+}
+```
+
 ---
 
 ## 3. Frontend Architecture
