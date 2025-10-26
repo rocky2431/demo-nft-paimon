@@ -4,6 +4,24 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "../contracts/presale/VRFConfig.sol";
 
+// VRF Coordinator V2 interface (minimal)
+interface IVRFCoordinatorV2 {
+        function createSubscription() external returns (uint64 subId);
+        function fundSubscription(uint64 subId, uint96 amount) external;
+        function addConsumer(uint64 subId, address consumer) external;
+        function getSubscription(uint64 subId)
+            external
+            view
+            returns (uint96 balance, uint64 reqCount, address owner, address[] memory consumers);
+}
+
+// LINK Token interface (minimal)
+interface ILINK {
+    function transferAndCall(address to, uint256 value, bytes calldata data) external returns (bool success);
+    function balanceOf(address account) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+}
+
 /**
  * @title SetupVRFSubscription
  * @notice Script to create and configure Chainlink VRF V2 subscription for RWABondNFT
@@ -23,24 +41,6 @@ import "../contracts/presale/VRFConfig.sol";
  *     --verify
  */
 contract SetupVRFSubscription is Script {
-    // VRF Coordinator V2 interface (minimal)
-    interface IVRFCoordinatorV2 {
-        function createSubscription() external returns (uint64 subId);
-        function fundSubscription(uint64 subId, uint96 amount) external;
-        function addConsumer(uint64 subId, address consumer) external;
-        function getSubscription(uint64 subId)
-            external
-            view
-            returns (uint96 balance, uint64 reqCount, address owner, address[] memory consumers);
-    }
-
-    // LINK Token interface (minimal)
-    interface ILINK {
-        function transferAndCall(address to, uint256 value, bytes calldata data) external returns (bool success);
-        function balanceOf(address account) external view returns (uint256);
-        function approve(address spender, uint256 amount) external returns (bool);
-    }
-
     // LINK Token addresses
     address constant BSC_MAINNET_LINK = 0x404460C6A5EdE2D891e8297795264fDe62ADBB75;
     address constant BSC_TESTNET_LINK = 0x84b9B910527Ad5C03A9Ca831909E21e236EA7b06;

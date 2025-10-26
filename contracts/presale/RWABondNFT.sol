@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -21,7 +22,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  * - Dynamic metadata based on accumulated Remint earnings
  * - 5 rarity tiers: Bronze → Silver → Gold → Diamond → Legendary
  */
-contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, ReentrancyGuard {
+contract RWABondNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Strings for uint256;
 
@@ -373,7 +374,7 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
      * @notice Get total supply of minted NFTs
      * @return Total supply
      */
-    function totalSupply() external view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return _tokenIdCounter;
     }
 
@@ -386,7 +387,10 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
      * @return requestId The VRF request ID (0 if request failed)
      */
     function requestDiceRoll(uint256 tokenId) external whenNotPaused nonReentrant returns (uint256 requestId) {
-        require(ownerOf(tokenId) == msg.sender, "RWABondNFT: caller is not owner");
+        require(
+            ownerOf(tokenId) == msg.sender || msg.sender == remintController,
+            "RWABondNFT: caller is not owner"
+        );
         require(!isMatured(tokenId), "RWABondNFT: bond has matured");
 
         BondInfo storage bond = _bondInfo[tokenId];
@@ -559,12 +563,55 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
         emit VRFSubscriptionUpdated(oldSubscriptionId, newSubscriptionId);
     }
 
+    // ==================== RemintController Integration ====================
+
+    /// @notice RemintController address (authorized to request dice rolls)
+    address public remintController;
+
+    event RemintControllerUpdated(address indexed oldController, address indexed newController);
+
+    /**
+     * @notice Set RemintController address (admin only)
+     */
+    function setRemintController(address _remintController) external onlyOwner {
+        require(_remintController != address(0), "RWABondNFT: zero address");
+        address oldController = remintController;
+        remintController = _remintController;
+        emit RemintControllerUpdated(oldController, _remintController);
+    }
+
     // ==================== Internal Functions ====================
 
     /**
      * @notice Override required by Solidity for multiple inheritance
      */
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage, ERC721Enumerable)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @notice Override _update for ERC721Enumerable compatibility
+     */
+    function _update(address to, uint256 tokenId, address auth)
+        internal
+        override(ERC721, ERC721Enumerable)
+        returns (address)
+    {
+        return super._update(to, tokenId, auth);
+    }
+
+    /**
+     * @notice Override _increaseBalance for ERC721Enumerable compatibility
+     */
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721, ERC721Enumerable)
+    {
+        super._increaseBalance(account, value);
     }
 }
