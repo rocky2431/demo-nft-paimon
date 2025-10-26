@@ -414,24 +414,25 @@ contract RemintControllerTest is Test {
         bytes32 taskId = TASK_REFERRAL_1;
         bytes memory sig = _createOracleSignature(1, taskId);
 
-        uint256 treasuryBalanceBefore = usdc.balanceOf(treasury);
+        uint256 remintBefore = remintController.getRemintEarned(1);
 
         vm.prank(user1);
         remintController.completeSocialTask(1, taskId, sig);
 
-        uint256 treasuryBalanceAfter = usdc.balanceOf(treasury);
+        uint256 remintAfter = remintController.getRemintEarned(1);
 
+        // Referral reward is 5 USDC, but capped by Layer 2 (MAX_REMINT_PER_NFT = 1.5 USDC)
         assertEq(
-            treasuryBalanceAfter - treasuryBalanceBefore,
-            REFERRAL_REWARD,
-            "Treasury should receive 5 USDC referral reward"
+            remintAfter - remintBefore,
+            15 * 1e5, // 1.5 USDC (capped by Layer 2)
+            "NFT should receive 1.5 USDC Remint (capped by Layer 2)"
         );
     }
 
     function test_ReferralReward_MultipleReferrals() public {
         bytes32[3] memory referralTasks = [TASK_REFERRAL_1, TASK_REFERRAL_5, TASK_REFERRAL_10];
 
-        uint256 treasuryBalanceBefore = usdc.balanceOf(treasury);
+        uint256 remintBefore = remintController.getRemintEarned(1);
 
         for (uint256 i = 0; i < 3; i++) {
             bytes memory sig = _createOracleSignature(1, referralTasks[i]);
@@ -439,13 +440,14 @@ contract RemintControllerTest is Test {
             remintController.completeSocialTask(1, referralTasks[i], sig);
         }
 
-        uint256 treasuryBalanceAfter = usdc.balanceOf(treasury);
+        uint256 remintAfter = remintController.getRemintEarned(1);
 
-        // Each referral task earns 5 USDC
+        // Each referral task earns 5 USDC Remint, but capped at 1.5 USDC total (MAX_REMINT_PER_NFT)
+        // 3 × 5 = 15 USDC theoretical, but Layer 2 cap limits to 1.5 USDC
         assertEq(
-            treasuryBalanceAfter - treasuryBalanceBefore,
-            REFERRAL_REWARD * 3,
-            "Treasury should receive 15 USDC total"
+            remintAfter - remintBefore,
+            15 * 1e5, // 1.5 USDC (MAX_REMINT_PER_NFT)
+            "NFT should receive 1.5 USDC Remint (capped by Layer 2)"
         );
     }
 

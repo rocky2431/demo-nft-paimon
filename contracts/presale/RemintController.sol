@@ -65,8 +65,29 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
     uint8 public constant LEADERBOARD_LUCKIEST_ROLLERS = 1;
     uint8 public constant LEADERBOARD_SOCIAL_CHAMPIONS = 2;
 
-    // Referral reward (5 USDC with 6 decimals)
+    // Referral reward (5 USDC with 6 decimals converted to Remint)
     uint256 public constant REFERRAL_REWARD = 5 * 1e6;
+
+    // ==================== Remint Control (Hybrid Mechanism - Balanced Config) ====================
+
+    /// @notice Layer 1: Maximum Remint per single dice roll
+    /// Prevents single-roll explosion rewards
+    uint256 public constant MAX_REMINT_PER_ROLL = 4 * 1e5; // 0.4 USDC
+
+    /// @notice Layer 2: Maximum total Remint per NFT
+    /// Prevents individual users from depleting the pool
+    /// Corresponds to ~6% additional APY (on top of 2% base)
+    uint256 public constant MAX_REMINT_PER_NFT = 15 * 1e5; // 1.5 USDC
+
+    /// @notice Layer 3: Total Remint pool for all NFTs
+    /// Based on bond yield calculation:
+    /// Bond yield (6% APY × 87 days) = 500,000 × 6% × (87/365) = 7,151 USDC
+    /// Minus base yield commitment = 7,151 - 2,500 = 4,651 USDC
+    /// Round down for safety margin
+    uint256 public constant TOTAL_REMINT_POOL = 4_650 * 1e6; // 4,650 USDC
+
+    /// @notice Total Remint distributed globally (accumulated)
+    uint256 public totalRemintDistributed;
 
     /// @notice Dice data for each NFT token
     struct DiceData {
@@ -107,6 +128,7 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
     event DiceTypeUpgraded(uint256 indexed tokenId, uint8 oldDiceType, uint8 newDiceType, uint256 tasksCompleted);
     event LeaderboardUpdated(uint8 indexed leaderboardType, uint256 indexed tokenId, address indexed holder);
     event WeeklyRollsReset(uint256 indexed tokenId, uint256 weekNumber);
+    event ReferralRewardGranted(uint256 indexed tokenId, uint256 amount);
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
 
@@ -188,14 +210,45 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
         // Calculate APY based on result
         uint256 apyBasisPoints = _calculateAPY(dice.diceType, result);
 
-        // Calculate internal remint for tracking purposes (not immediately distributed)
-        // This is used to track potential earnings in totalRemintEarned
-        // Actual distribution happens at bond maturity
+        // Calculate theoretical Remint (before caps)
         uint256 principal = 100 * 1e6; // 100 USDC
-        uint256 internalRemint = (principal * apyBasisPoints * 90) / (10000 * 365);
-        dice.totalRemintEarned += internalRemint;
+        uint256 theoreticalRemint = (principal * apyBasisPoints * 90) / (10000 * 365);
+
+        // ==================== HYBRID MECHANISM: THREE-LAYER CONTROL ====================
+
+        // Apply three-layer caps
+        uint256 actualRemint = theoreticalRemint;
+
+        // Layer 1: Limit single roll reward
+        if (actualRemint > MAX_REMINT_PER_ROLL) {
+            actualRemint = MAX_REMINT_PER_ROLL;
+        }
+
+        // Layer 2: Check individual NFT cap
+        uint256 currentTotal = dice.totalRemintEarned;
+        if (currentTotal >= MAX_REMINT_PER_NFT) {
+            // Already maxed out, no more rewards
+            actualRemint = 0;
+        } else if (currentTotal + actualRemint > MAX_REMINT_PER_NFT) {
+            // Would exceed cap, give remaining allowance
+            actualRemint = MAX_REMINT_PER_NFT - currentTotal;
+        }
+
+        // Layer 3: Check global pool availability
+        if (totalRemintDistributed >= TOTAL_REMINT_POOL) {
+            // Global pool exhausted
+            actualRemint = 0;
+        } else if (totalRemintDistributed + actualRemint > TOTAL_REMINT_POOL) {
+            // Would exceed global pool, give remaining
+            actualRemint = TOTAL_REMINT_POOL - totalRemintDistributed;
+        }
+
+        // Update balances (cumulative addition)
+        dice.totalRemintEarned += actualRemint;
+        totalRemintDistributed += actualRemint;
 
         // Event shows 0 for remintEarned as tokens are not distributed yet
+        // Actual distribution happens at bond maturity via SettlementRouter
         uint256 remintEarned = 0;
 
         // Update highest dice roll for leaderboard
@@ -295,22 +348,50 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
         _updateLeaderboard(LEADERBOARD_SOCIAL_CHAMPIONS, tokenId);
 
         // Handle referral rewards (if applicable)
-        _processReferralReward(taskId);
+        _processReferralReward(tokenId, taskId);
     }
 
     /**
      * @notice Process referral reward if task is a referral task
+     * @param tokenId NFT token ID (reward recipient)
+     * @param taskId Social task ID
+     * @dev Referral tasks grant 5 USDC Remint to the task completer (the referrer)
+     *      Subject to Layer 2 (individual cap) and Layer 3 (global pool) limits
+     *      NOT subject to Layer 1 (single roll cap)
      */
-    function _processReferralReward(bytes32 taskId) private {
+    function _processReferralReward(uint256 tokenId, bytes32 taskId) private {
         bytes32 referral1 = keccak256("REFERRAL_1");
         bytes32 referral5 = keccak256("REFERRAL_5");
         bytes32 referral10 = keccak256("REFERRAL_10");
 
         if (taskId == referral1 || taskId == referral5 || taskId == referral10) {
-            // Transfer 5 USDC from this contract to treasury
-            // NOTE: This contract needs to be funded with USDC for referral rewards
-            IERC20 usdc = bondNFT.USDC();
-            usdc.safeTransfer(treasury, REFERRAL_REWARD);
+            // Grant Remint reward (5 USDC) with Layer 2/3 control
+            uint256 rewardAmount = REFERRAL_REWARD; // 5 USDC
+            uint256 actualAmount = rewardAmount;
+
+            DiceData storage dice = _diceData[tokenId];
+
+            // Layer 2: Individual NFT cap (NOT Layer 1 - referrals bypass single-roll limit)
+            uint256 currentTotal = dice.totalRemintEarned;
+            if (currentTotal >= MAX_REMINT_PER_NFT) {
+                actualAmount = 0;
+            } else if (currentTotal + actualAmount > MAX_REMINT_PER_NFT) {
+                actualAmount = MAX_REMINT_PER_NFT - currentTotal;
+            }
+
+            // Layer 3: Global pool availability
+            if (totalRemintDistributed >= TOTAL_REMINT_POOL) {
+                actualAmount = 0;
+            } else if (totalRemintDistributed + actualAmount > TOTAL_REMINT_POOL) {
+                actualAmount = TOTAL_REMINT_POOL - totalRemintDistributed;
+            }
+
+            // Grant reward if any amount available
+            if (actualAmount > 0) {
+                dice.totalRemintEarned += actualAmount;
+                totalRemintDistributed += actualAmount;
+                emit ReferralRewardGranted(tokenId, actualAmount);
+            }
         }
     }
 
@@ -509,6 +590,68 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
     function getRemintEarned(uint256 tokenId) external view returns (uint256) {
         return _diceData[tokenId].totalRemintEarned;
     }
+
+    /**
+     * @notice Get remaining Remint allowance for an NFT
+     * @param tokenId NFT token ID
+     * @return individual Remaining allowance for this NFT (Layer 2 cap)
+     * @return global Remaining global pool (Layer 3 cap)
+     * @dev Useful for users to check how much more Remint they can earn
+     */
+    function getRemintAllowance(uint256 tokenId)
+        external
+        view
+        returns (uint256 individual, uint256 global)
+    {
+        uint256 earned = _diceData[tokenId].totalRemintEarned;
+
+        // Individual allowance (Layer 2)
+        if (earned >= MAX_REMINT_PER_NFT) {
+            individual = 0;
+        } else {
+            individual = MAX_REMINT_PER_NFT - earned;
+        }
+
+        // Global allowance (Layer 3)
+        if (totalRemintDistributed >= TOTAL_REMINT_POOL) {
+            global = 0;
+        } else {
+            global = TOTAL_REMINT_POOL - totalRemintDistributed;
+        }
+    }
+
+    /**
+     * @notice Get global Remint pool statistics
+     * @return totalPool Total Remint pool size (constant)
+     * @return distributed Total distributed so far (cumulative)
+     * @return remaining Remaining in pool
+     * @return utilizationBps Utilization rate in basis points (10000 = 100%)
+     * @dev Provides transparency on global pool state
+     */
+    function getGlobalPoolStats()
+        external
+        view
+        returns (
+            uint256 totalPool,
+            uint256 distributed,
+            uint256 remaining,
+            uint256 utilizationBps
+        )
+    {
+        totalPool = TOTAL_REMINT_POOL;
+        distributed = totalRemintDistributed;
+
+        if (TOTAL_REMINT_POOL > totalRemintDistributed) {
+            remaining = TOTAL_REMINT_POOL - totalRemintDistributed;
+        } else {
+            remaining = 0;
+        }
+
+        // Calculate utilization in basis points (e.g., 5000 = 50%)
+        utilizationBps = (totalRemintDistributed * 10000) / TOTAL_REMINT_POOL;
+    }
+
+    // ==================== Admin Functions ====================
 
     /**
      * @notice Withdraw stuck USDC (emergency function)
