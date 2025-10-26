@@ -10,31 +10,27 @@ export default function Home() {
       {/* Top navigation bar */}
       <Navigation activePage="swap" />
 
-      {/* Main content area (centered SwapCard) */}
+      {/* Main content area */}
       <Container
-        maxWidth={false}
+        maxWidth="lg"
         sx={{
           pt: 12, // Account for fixed navbar
           pb: 8,
           px: {
-            xs: 2, // Mobile: 16px padding
-            sm: 0, // Desktop: no padding
+            xs: 2,
+            sm: 3,
           },
           minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
         }}
       >
         {/* Huge whitespace (OlympusDAO style) */}
-        <Box sx={{ height: { xs: 40, sm: 80 } }} />
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
 
         {/* SwapCard */}
         <SwapCard />
 
         {/* Huge whitespace (OlympusDAO style) */}
-        <Box sx={{ height: { xs: 40, sm: 80 } }} />
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
 
         {/* Footer info */}
         <Typography
