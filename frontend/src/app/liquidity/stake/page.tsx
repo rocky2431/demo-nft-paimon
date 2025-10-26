@@ -2,6 +2,7 @@
 
 import { Box, Container, Typography, Stack } from '@mui/material';
 import { StakingCard } from '@/components/liquidity/StakingCard';
+import { Navigation, LiquidityTabs } from '@/components/layout';
 
 /**
  * Liquidity Staking Page
@@ -9,23 +10,39 @@ import { StakingCard } from '@/components/liquidity/StakingCard';
  *
  * Features:
  * - StakingCard component
- * - Navigation breadcrumb
+ * - Navigation with LiquidityTabs
  * - Footer information
  * - OlympusDAO-inspired design
  */
 export default function StakePage() {
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(180deg, rgba(255, 152, 0, 0.02) 0%, rgba(255, 87, 34, 0.01) 100%)',
-        py: 8,
-      }}
-    >
-      <Container maxWidth="lg">
-        <Stack spacing={6}>
-          {/* Page header */}
-          <Box sx={{ textAlign: 'center' }}>
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+      {/* Top navigation bar */}
+      <Navigation activePage="liquidity" />
+
+      {/* Main content area */}
+      <Box
+        sx={{
+          pt: 12, // Account for fixed navbar
+          pb: 8,
+          px: {
+            xs: 2,
+            sm: 3,
+          },
+          minHeight: '100vh',
+          background: 'linear-gradient(180deg, rgba(255, 152, 0, 0.02) 0%, rgba(255, 87, 34, 0.01) 100%)',
+        }}
+      >
+        <Container maxWidth="lg">
+          {/* Huge whitespace (OlympusDAO style) */}
+          <Box sx={{ height: { xs: 40, sm: 60 } }} />
+
+          {/* Liquidity sub-navigation tabs */}
+          <LiquidityTabs activeTab="stake" />
+
+          <Stack spacing={6}>
+            {/* Page header */}
+            <Box sx={{ textAlign: 'center' }}>
             <Typography
               variant="h3"
               component="h1"
@@ -104,8 +121,12 @@ export default function StakePage() {
               </Stack>
             </Stack>
           </Box>
-        </Stack>
-      </Container>
+          </Stack>
+        </Container>
+
+        {/* Huge whitespace (OlympusDAO style) */}
+        <Box sx={{ height: { xs: 40, sm: 60 } }} />
+      </Box>
     </Box>
   );
 }

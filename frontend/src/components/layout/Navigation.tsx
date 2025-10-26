@@ -1,10 +1,14 @@
 'use client';
 
-import { Container, Typography, Box, Stack } from '@mui/material';
+import { Container, Typography, Box, Stack, Menu, MenuItem } from '@mui/material';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
+import { useState } from 'react';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import CasinoIcon from '@mui/icons-material/Casino';
+import LocalActivityIcon from '@mui/icons-material/LocalActivity';
 
-export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote';
+export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale';
 
 interface NavigationProps {
   /**
@@ -25,6 +29,17 @@ interface NavigationProps {
  * - OlympusDAO-inspired design
  */
 export function Navigation({ activePage }: NavigationProps) {
+  const [presaleAnchorEl, setPresaleAnchorEl] = useState<null | HTMLElement>(null);
+  const presaleMenuOpen = Boolean(presaleAnchorEl);
+
+  const handlePresaleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setPresaleAnchorEl(event.currentTarget);
+  };
+
+  const handlePresaleClose = () => {
+    setPresaleAnchorEl(null);
+  };
+
   return (
     <Box
       component="nav"
@@ -132,6 +147,86 @@ export function Navigation({ activePage }: NavigationProps) {
                 Vote
               </Typography>
             </Link>
+
+            {/* Presale Dropdown */}
+            <Box
+              onClick={handlePresaleClick}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Typography
+                variant="body1"
+                fontWeight={600}
+                sx={{
+                  color: activePage === 'presale' ? 'primary.main' : 'text.secondary',
+                  transition: 'color 0.3s',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Presale
+              </Typography>
+              <ArrowDropDownIcon
+                sx={{
+                  color: activePage === 'presale' ? 'primary.main' : 'text.secondary',
+                  transition: 'transform 0.3s',
+                  transform: presaleMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </Box>
+
+            <Menu
+              anchorEl={presaleAnchorEl}
+              open={presaleMenuOpen}
+              onClose={handlePresaleClose}
+              sx={{
+                '& .MuiPaper-root': {
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                  mt: 1,
+                },
+              }}
+            >
+              <MenuItem
+                component={Link}
+                href="/presale/mint"
+                onClick={handlePresaleClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <LocalActivityIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Mint Bond NFT
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                href="/presale/dice"
+                onClick={handlePresaleClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <CasinoIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Dice Rolling
+                </Typography>
+              </MenuItem>
+            </Menu>
           </Stack>
 
           {/* Spacer - pushes wallet button to far right */}

@@ -2,7 +2,7 @@
 
 import { Container, Typography, Box } from '@mui/material';
 import { AddLiquidityCard } from '@/components/liquidity/AddLiquidityCard';
-import { Navigation } from '@/components/layout/Navigation';
+import { Navigation, LiquidityTabs } from '@/components/layout';
 
 export default function AddLiquidityPage() {
   return (
@@ -25,6 +25,9 @@ export default function AddLiquidityPage() {
       >
         {/* Huge whitespace (OlympusDAO style) */}
         <Box sx={{ height: { xs: 40, sm: 60 } }} />
+
+        {/* Liquidity sub-navigation tabs */}
+        <LiquidityTabs activeTab="add" />
 
         {/* AddLiquidityCard */}
         <AddLiquidityCard />
