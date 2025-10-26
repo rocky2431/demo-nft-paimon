@@ -375,6 +375,129 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
         return _tokenIdCounter;
     }
 
+    // ==================== Chainlink VRF Functions (Basic Framework) ====================
+
+    /**
+     * @notice Request random dice roll for a token (simplified version)
+     * @param tokenId Token ID to roll dice for
+     * @dev Full implementation with weekly limits, social tasks in PRESALE-002
+     */
+    function requestDiceRoll(uint256 tokenId) external whenNotPaused nonReentrant returns (uint256 requestId) {
+        require(ownerOf(tokenId) == msg.sender, "RWABondNFT: caller is not owner");
+        require(!isMatured(tokenId), "RWABondNFT: bond has matured");
+
+        BondInfo storage bond = _bondInfo[tokenId];
+        require(bond.weeklyRollsLeft > 0, "RWABondNFT: no rolls left this week");
+
+        // Request random words from Chainlink VRF
+        requestId = _requestRandomWords();
+
+        // Map requestId to tokenId for callback
+        _vrfRequestToTokenId[requestId] = tokenId;
+
+        // Decrement weekly rolls
+        bond.weeklyRollsLeft--;
+
+        emit DiceRolled(tokenId, requestId, bond.diceType);
+
+        return requestId;
+    }
+
+    /**
+     * @notice Internal function to request random words from VRF
+     * @return requestId The VRF request ID
+     */
+    function _requestRandomWords() internal returns (uint256 requestId) {
+        // Call Chainlink VRF Coordinator
+        (bool success, bytes memory data) = vrfCoordinator.call(
+            abi.encodeWithSignature(
+                "requestRandomWords(bytes32,uint64,uint16,uint32,uint32)",
+                vrfKeyHash,
+                vrfSubscriptionId,
+                3, // requestConfirmations
+                vrfCallbackGasLimit,
+                1 // numWords (we only need 1 random number)
+            )
+        );
+        require(success, "RWABondNFT: VRF request failed");
+        requestId = abi.decode(data, (uint256));
+    }
+
+    /**
+     * @notice Chainlink VRF callback function
+     * @param requestId The VRF request ID
+     * @param randomWords Array of random numbers
+     * @dev Only callable by VRF Coordinator
+     */
+    function rawFulfillRandomWords(uint256 requestId, uint256[] memory randomWords) external {
+        require(msg.sender == vrfCoordinator, "RWABondNFT: only VRF coordinator");
+
+        uint256 tokenId = _vrfRequestToTokenId[requestId];
+        require(tokenId != 0, "RWABondNFT: invalid request ID");
+
+        BondInfo storage bond = _bondInfo[tokenId];
+        uint8 diceType = bond.diceType;
+
+        // Calculate dice result and reward
+        (uint256 diceResult, uint256 remintReward) = _calculateDiceReward(diceType, randomWords[0]);
+
+        // Add Remint reward to bond
+        uint128 oldRemint = bond.accumulatedRemint;
+        bond.accumulatedRemint += uint128(remintReward);
+
+        // Check if rarity tier upgraded
+        string memory oldRarity = _getRarityTierFromRemint(oldRemint);
+        string memory newRarity = getRarityTier(tokenId);
+        if (keccak256(bytes(oldRarity)) != keccak256(bytes(newRarity))) {
+            emit RarityUpgraded(tokenId, oldRarity, newRarity);
+        }
+
+        emit DiceResult(tokenId, diceResult, remintReward);
+
+        // Clean up mapping
+        delete _vrfRequestToTokenId[requestId];
+    }
+
+    /**
+     * @notice Calculate dice reward based on dice type and random value
+     * @param diceType Dice type (0=Normal, 1=Gold, 2=Diamond)
+     * @param randomValue Random number from VRF
+     * @return diceResult The dice roll result (1-6, 1-12, or 1-20)
+     * @return remintReward The Remint reward amount in USDC
+     */
+    function _calculateDiceReward(uint8 diceType, uint256 randomValue)
+        internal
+        pure
+        returns (uint256 diceResult, uint256 remintReward)
+    {
+        if (diceType == 0) {
+            // Normal Dice: 1-6 → 0-3% APY for 90 days
+            diceResult = (randomValue % 6) + 1;
+            remintReward = (diceResult * 500_000) / 6; // Max 0.5 USDC (500,000 µUSDC)
+        } else if (diceType == 1) {
+            // Gold Dice: 1-12 → 0-6% APY for 90 days
+            diceResult = (randomValue % 12) + 1;
+            remintReward = (diceResult * 1_000_000) / 12; // Max 1.0 USDC
+        } else {
+            // Diamond Dice: 1-20 → 0-10% APY for 90 days
+            diceResult = (randomValue % 20) + 1;
+            remintReward = (diceResult * 2_000_000) / 20; // Max 2.0 USDC
+        }
+    }
+
+    /**
+     * @notice Get rarity tier from Remint amount (helper for rarity upgrade detection)
+     * @param remint Accumulated Remint amount
+     * @return Rarity tier name
+     */
+    function _getRarityTierFromRemint(uint128 remint) internal pure returns (string memory) {
+        if (remint >= LEGENDARY_THRESHOLD) return "Legendary";
+        if (remint >= DIAMOND_THRESHOLD) return "Diamond";
+        if (remint >= GOLD_THRESHOLD) return "Gold";
+        if (remint >= SILVER_THRESHOLD) return "Silver";
+        return "Bronze";
+    }
+
     // ==================== Admin Functions ====================
 
     /**
