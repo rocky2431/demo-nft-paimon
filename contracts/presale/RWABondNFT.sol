@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title RWABondNFT
@@ -21,6 +23,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  */
 contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using Strings for uint256;
 
     // ==================== State Variables ====================
 
@@ -214,31 +217,131 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
     }
 
     /**
-     * @notice Generate token URI with dynamic metadata
+     * @notice Generate token URI with dynamic metadata (OpenSea compatible)
      * @param tokenId Token ID
-     * @return Token URI (JSON)
+     * @return Token URI (data URI with base64-encoded JSON)
      */
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         _requireOwned(tokenId);
 
         BondInfo memory bond = _bondInfo[tokenId];
         string memory rarity = getRarityTier(tokenId);
+        uint256 totalYield = calculateTotalYield(tokenId);
+        bool matured = isMatured(tokenId);
 
-        // For now, return a simple JSON string
-        // TODO: Implement full JSON metadata with IPFS images
+        // Build JSON metadata according to OpenSea standards
         string memory json = string(
             abi.encodePacked(
-                '{"name": "Paimon Bond NFT #',
-                _toString(tokenId),
-                '", "description": "RWA Bond Certificate with gamified yield", "rarity": "',
-                rarity,
-                '", "maturity": ',
-                _toString(bond.maturityDate),
-                "}"
+                '{"name":"Paimon Bond NFT #',
+                tokenId.toString(),
+                '","description":"RWA Bond Certificate (100 USDC principal, 90-day maturity, 2% APY) with gamified Remint yield. Trade this NFT before maturity or redeem for principal + yield at settlement.","image":"',
+                _getRarityImage(rarity),
+                '","attributes":[',
+                _buildAttributes(bond, rarity, totalYield, matured),
+                "]}"
             )
         );
 
-        return json;
+        // Return as data URI
+        string memory dataURI = string(abi.encodePacked("data:application/json;base64,", Base64.encode(bytes(json))));
+        return dataURI;
+    }
+
+    /**
+     * @notice Get rarity-specific image URI (placeholder for designer integration)
+     * @param rarity Rarity tier name
+     * @return Image URI (IPFS or data URI)
+     */
+    function _getRarityImage(string memory rarity) internal pure returns (string memory) {
+        // Placeholder: Use on-chain SVG or IPFS CID
+        // Designer will replace these with actual artwork
+        if (keccak256(bytes(rarity)) == keccak256(bytes("Legendary"))) {
+            return "ipfs://QmLegendaryPlaceholder"; // Replace with actual CID
+        } else if (keccak256(bytes(rarity)) == keccak256(bytes("Diamond"))) {
+            return "ipfs://QmDiamondPlaceholder";
+        } else if (keccak256(bytes(rarity)) == keccak256(bytes("Gold"))) {
+            return "ipfs://QmGoldPlaceholder";
+        } else if (keccak256(bytes(rarity)) == keccak256(bytes("Silver"))) {
+            return "ipfs://QmSilverPlaceholder";
+        } else {
+            // Bronze (default)
+            return "ipfs://QmBronzePlaceholder";
+        }
+    }
+
+    /**
+     * @notice Build attributes array for OpenSea metadata
+     * @param bond Bond info
+     * @param rarity Rarity tier
+     * @param totalYield Total yield amount
+     * @param matured Whether bond is matured
+     * @return JSON attributes array
+     */
+    function _buildAttributes(BondInfo memory bond, string memory rarity, uint256 totalYield, bool matured)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string(
+            abi.encodePacked(
+                '{"trait_type":"Rarity","value":"',
+                rarity,
+                '"},',
+                '{"trait_type":"Principal","display_type":"number","value":',
+                uint256(bond.principal / 1e6).toString(), // Convert to USDC (no decimals for display)
+                "},",
+                '{"trait_type":"Total Yield","display_type":"number","value":',
+                _formatUSDC(totalYield),
+                "},",
+                '{"trait_type":"Remint Earned","display_type":"number","value":',
+                _formatUSDC(bond.accumulatedRemint),
+                "},",
+                '{"trait_type":"Maturity Date","display_type":"date","value":',
+                uint256(bond.maturityDate).toString(),
+                "},",
+                '{"trait_type":"Dice Type","value":"',
+                _getDiceTypeName(bond.diceType),
+                '"},',
+                '{"trait_type":"Status","value":"',
+                matured ? "Matured" : "Active",
+                '"}'
+            )
+        );
+    }
+
+    /**
+     * @notice Format USDC amount as string with 2 decimals
+     * @param amount Amount in USDC (6 decimals)
+     * @return Formatted string (e.g., "100.50")
+     */
+    function _formatUSDC(uint256 amount) internal pure returns (string memory) {
+        uint256 wholePart = amount / 1e6;
+        uint256 decimalPart = (amount % 1e6) / 1e4; // Get 2 decimal places
+        return string(abi.encodePacked(wholePart.toString(), ".", _padZeros(decimalPart, 2)));
+    }
+
+    /**
+     * @notice Pad number with leading zeros
+     */
+    function _padZeros(uint256 num, uint256 targetLength) internal pure returns (string memory) {
+        string memory numStr = num.toString();
+        uint256 len = bytes(numStr).length;
+        if (len >= targetLength) return numStr;
+
+        bytes memory zeros = new bytes(targetLength - len);
+        for (uint256 i = 0; i < targetLength - len; i++) {
+            zeros[i] = "0";
+        }
+        return string(abi.encodePacked(zeros, numStr));
+    }
+
+    /**
+     * @notice Get dice type name from ID
+     */
+    function _getDiceTypeName(uint8 diceType) internal pure returns (string memory) {
+        if (diceType == 1) return "Gold Dice";
+        if (diceType == 2) return "Diamond Dice";
+        return "Normal Dice";
     }
 
     // ==================== View Functions ====================
@@ -300,28 +403,6 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
     }
 
     // ==================== Internal Functions ====================
-
-    /**
-     * @notice Convert uint256 to string
-     */
-    function _toString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
-    }
 
     /**
      * @notice Override required by Solidity for multiple inheritance
