@@ -36,6 +36,20 @@ interface IDEXPair {
 contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    // ==================== State Variables (PRESALE-008) ====================
+
+    /// @notice USDC token address (for bond redemptions)
+    IERC20 public immutable usdcToken;
+
+    /// @notice Total USDC received from Bond NFT sales
+    uint256 public totalBondSales;
+
+    /// @notice Authorized Bond NFT contract address
+    address public bondNFTContract;
+
+    /// @notice Authorized Settlement Router address
+    address public settlementRouter;
+
     // ==================== Events ====================
 
     /// @notice Emitted when DEX fees are claimed
@@ -47,6 +61,12 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Emitted when ETH is withdrawn
     event WithdrawETH(address indexed recipient, uint256 amount);
 
+    /// @notice Emitted when bond sales are received (PRESALE-008)
+    event BondSalesReceived(uint256 indexed amount, uint256 indexed totalSales);
+
+    /// @notice Emitted when redemption is fulfilled (PRESALE-008)
+    event RedemptionFulfilled(address indexed user, uint256 indexed amount);
+
     // ==================== Custom Errors ====================
 
     error ZeroAddress();
@@ -54,15 +74,19 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     error NoPairs();
     error InsufficientBalance();
     error TransferFailed();
+    error Unauthorized(); // PRESALE-008: For bond NFT and settlement router access control
 
     // ==================== Constructor ====================
 
     /**
      * @notice Constructor
      * @param initialOwner Initial owner address (should be multi-sig)
+     * @param _usdcToken USDC token address (for bond redemptions)
      */
-    constructor(address initialOwner) Ownable(initialOwner) {
+    constructor(address initialOwner, address _usdcToken) Ownable(initialOwner) {
         if (initialOwner == address(0)) revert ZeroAddress();
+        if (_usdcToken == address(0)) revert ZeroAddress();
+        usdcToken = IERC20(_usdcToken);
     }
 
     // ==================== Fee Collection ====================
@@ -191,4 +215,63 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
      * @dev Allows treasury to receive native tokens
      */
     receive() external payable {}
+
+    // ==================== PRESALE-008: Bond NFT Settlement Integration ====================
+
+    /**
+     * @notice Authorize Bond NFT contract
+     * @param _bondNFTContract Address of the Bond NFT contract
+     * @dev Only owner can authorize the bond NFT contract
+     */
+    function authorizeBondNFTContract(address _bondNFTContract) external onlyOwner {
+        if (_bondNFTContract == address(0)) revert ZeroAddress();
+        bondNFTContract = _bondNFTContract;
+    }
+
+    /**
+     * @notice Authorize Settlement Router contract
+     * @param _settlementRouter Address of the Settlement Router contract
+     * @dev Only owner can authorize the settlement router
+     */
+    function authorizeSettlementRouter(address _settlementRouter) external onlyOwner {
+        if (_settlementRouter == address(0)) revert ZeroAddress();
+        settlementRouter = _settlementRouter;
+    }
+
+    /**
+     * @notice Receive USDC from Bond NFT sales
+     * @param usdcAmount Amount of USDC received from NFT minting
+     * @dev Only authorized Bond NFT contract can call this function.
+     *      Tracks total bond sales for accounting purposes.
+     */
+    function receiveBondSales(uint256 usdcAmount) external whenNotPaused nonReentrant {
+        if (msg.sender != bondNFTContract) revert Unauthorized();
+        if (usdcAmount == 0) revert ZeroAmount();
+
+        totalBondSales += usdcAmount;
+
+        emit BondSalesReceived(usdcAmount, totalBondSales);
+    }
+
+    /**
+     * @notice Fulfill cash redemption at bond maturity
+     * @param user Address to receive the redemption payment
+     * @param amount Amount of USDC to pay (principal + yield)
+     * @dev Only authorized Settlement Router can call this function.
+     *      Transfers USDC from treasury to user for bond redemption.
+     */
+    function fulfillRedemption(address user, uint256 amount) external whenNotPaused nonReentrant {
+        if (msg.sender != settlementRouter) revert Unauthorized();
+        if (user == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        // Check treasury has sufficient USDC balance
+        uint256 balance = usdcToken.balanceOf(address(this));
+        if (balance < amount) revert InsufficientBalance();
+
+        // Transfer USDC to user
+        usdcToken.safeTransfer(user, amount);
+
+        emit RedemptionFulfilled(user, amount);
+    }
 }

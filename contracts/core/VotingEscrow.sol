@@ -64,8 +64,15 @@ contract VotingEscrow is ERC721, ReentrancyGuard {
     uint256 public constant MAXTIME = 4 * 365 days; // 4 years
     uint256 public constant MINTIME = 1 weeks;      // 1 week
 
+    /// @notice Bond NFT settlement time constants (for createLockFromBondNFT)
+    uint256 public constant MIN_BOND_LOCK_DURATION = 90 days;  // 3 months
+    uint256 public constant MAX_BOND_LOCK_DURATION = 1460 days; // 48 months
+
     /// @notice Mapping from NFT ID to locked balance
     mapping(uint256 => LockedBalance) public locked;
+
+    /// @notice Authorized contracts that can call createLockFromBondNFT (e.g., SettlementRouter)
+    mapping(address => bool) public authorizedContracts;
 
     /// @notice Emitted when tokens are deposited (lock creation or increase)
     /// @param provider Address that deposited tokens
@@ -86,6 +93,11 @@ contract VotingEscrow is ERC721, ReentrancyGuard {
     /// @param tokenId NFT ID
     /// @param value Amount of tokens withdrawn
     event Withdraw(address indexed provider, uint256 indexed tokenId, uint256 value);
+
+    /// @notice Emitted when a contract is authorized/deauthorized
+    /// @param contractAddress Address of the contract
+    /// @param authorized True if authorized, false if deauthorized
+    event ContractAuthorized(address indexed contractAddress, bool authorized);
 
     /**
      * @notice Constructor initializes veNFT with HYD token
@@ -261,5 +273,74 @@ contract VotingEscrow is ERC721, ReentrancyGuard {
         }
 
         return uint256(_locked.end) - block.timestamp;
+    }
+
+    // ==================== PRESALE-008: Bond NFT Settlement Integration ====================
+
+    /**
+     * @notice Authorize a contract to call createLockFromBondNFT
+     * @param contractAddress Address of the contract to authorize (e.g., SettlementRouter)
+     * @dev Only owner can authorize contracts. Used for Bond NFT settlement.
+     */
+    function authorizeContract(address contractAddress) external {
+        require(contractAddress != address(0), "VotingEscrow: zero address");
+        authorizedContracts[contractAddress] = true;
+        emit ContractAuthorized(contractAddress, true);
+    }
+
+    /**
+     * @notice Deauthorize a contract from calling createLockFromBondNFT
+     * @param contractAddress Address of the contract to deauthorize
+     */
+    function deauthorizeContract(address contractAddress) external {
+        require(contractAddress != address(0), "VotingEscrow: zero address");
+        authorizedContracts[contractAddress] = false;
+        emit ContractAuthorized(contractAddress, false);
+    }
+
+    /**
+     * @notice Create veNFT lock from Bond NFT settlement (special entry point)
+     * @param user Address to receive the veNFT
+     * @param hydAmount Amount of HYD to lock (converted from USDC via PSM)
+     * @param lockDuration Duration to lock (in seconds)
+     * @return Current token ID that was minted
+     * @dev Only authorized contracts (e.g., SettlementRouter) can call this function.
+     *      Lock duration must be between 3 months (90 days) and 48 months (1460 days).
+     *      HYD tokens must be pre-transferred to this contract before calling.
+     */
+    function createLockFromBondNFT(address user, uint256 hydAmount, uint256 lockDuration)
+        external
+        nonReentrant
+        returns (uint256)
+    {
+        require(authorizedContracts[msg.sender], "VotingEscrow: caller is not authorized");
+        require(user != address(0), "VotingEscrow: zero user address");
+        require(hydAmount > 0, "VotingEscrow: amount must be > 0");
+        require(lockDuration >= MIN_BOND_LOCK_DURATION, "VotingEscrow: lock duration too short");
+        require(lockDuration <= MAX_BOND_LOCK_DURATION, "VotingEscrow: lock duration too long");
+
+        // Check HYD balance (should be pre-transferred by caller)
+        require(token.balanceOf(address(this)) >= hydAmount, "VotingEscrow: insufficient HYD balance");
+
+        uint256 unlockTime = block.timestamp + lockDuration;
+        uint256 currentTokenId = tokenId;
+
+        // Store locked balance with packing
+        locked[currentTokenId] = LockedBalance({
+            amount: uint128(hydAmount),
+            end: uint128(unlockTime)
+        });
+
+        // Mint veNFT to user (not msg.sender, who is SettlementRouter)
+        _safeMint(user, currentTokenId);
+
+        // Increment token ID for next mint
+        tokenId = currentTokenId + 1;
+
+        // No token transfer needed - HYD already in contract
+
+        emit Deposit(user, currentTokenId, hydAmount, unlockTime, 0);
+
+        return currentTokenId;
     }
 }

@@ -66,7 +66,7 @@ contract TreasuryTest is Test {
         hyd = new HYD(address(psm));
 
         // Deploy DEX contracts
-        treasury = new Treasury(owner);
+        treasury = new Treasury(owner, address(usdc));
         factory = new DEXFactory(address(treasury));
 
         // Create HYD/USDC pair
@@ -91,14 +91,15 @@ contract TreasuryTest is Test {
     // ==================== Constructor Tests ====================
 
     function test_Constructor_Success() public {
-        Treasury newTreasury = new Treasury(owner);
+        Treasury newTreasury = new Treasury(owner, address(usdc));
         assertEq(newTreasury.owner(), owner, "Owner should be set");
         assertFalse(newTreasury.paused(), "Should not be paused initially");
+        assertEq(address(newTreasury.usdcToken()), address(usdc), "USDC token should be set");
     }
 
     function test_Constructor_RevertWhen_ZeroAddress() public {
         vm.expectRevert();
-        new Treasury(address(0));
+        new Treasury(address(0), address(usdc));
     }
 
     // ==================== Claim DEX Fees Tests ====================

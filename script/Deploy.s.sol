@@ -203,7 +203,7 @@ contract DeployScript is Script {
         console.log("\n[Step 5] Deploying DEX Contracts...");
 
         // Deploy Treasury first (needed for DEXFactory)
-        treasury = new Treasury(deployer);
+        treasury = new Treasury(deployer, address(usdc));
         console.log("  Treasury (temp) deployed:", address(treasury));
 
         // Deploy DEXFactory
