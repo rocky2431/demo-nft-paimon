@@ -565,6 +565,7 @@ contract RWABondNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable2Step,
 
     /// @notice RemintController address (authorized to request dice rolls)
     address public remintController;
+    address public settlementRouter; // PRESALE-003: Settlement router for bond NFT settlement
 
     event RemintControllerUpdated(address indexed oldController, address indexed newController);
 
@@ -576,6 +577,15 @@ contract RWABondNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable2Step,
         address oldController = remintController;
         remintController = _remintController;
         emit RemintControllerUpdated(oldController, _remintController);
+    }
+
+    /**
+     * @notice Set settlement router address (PRESALE-003)
+     * @param _settlementRouter New settlement router address
+     */
+    function setSettlementRouter(address _settlementRouter) external onlyOwner {
+        require(_settlementRouter != address(0), "RWABondNFT: zero address");
+        settlementRouter = _settlementRouter;
     }
 
     // ==================== Internal Functions ====================
@@ -611,5 +621,27 @@ contract RWABondNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable2Step,
         override(ERC721, ERC721Enumerable)
     {
         super._increaseBalance(account, value);
+    }
+
+    // ==================== Settlement Functions (PRESALE-003) ====================
+
+    /**
+     * @notice Burn Bond NFT after settlement
+     * @param tokenId Token ID to burn
+     * @dev Only callable by authorized settlement router
+     *      Called after user settles to veNFT or cash redemption
+     */
+    function burn(uint256 tokenId) external {
+        require(
+            msg.sender == settlementRouter || msg.sender == owner(),
+            "RWABondNFT: caller not authorized to burn"
+        );
+        require(_ownerOf(tokenId) != address(0), "RWABondNFT: token does not exist");
+
+        // Delete bond info
+        delete _bondInfo[tokenId];
+
+        // Burn the NFT
+        _burn(tokenId);
     }
 }

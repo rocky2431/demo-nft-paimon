@@ -83,7 +83,7 @@ contract SettlementRouter is ReentrancyGuard {
         bondNFT = RWABondNFT(_bondNFT);
         remintController = RemintController(_remintController);
         votingEscrow = VotingEscrow(_votingEscrow);
-        treasury = Treasury(_treasury);
+        treasury = Treasury(payable(_treasury));
         hyd = HYD(_hyd);
         psm = PSM(_psm);
         usdc = IERC20(_usdc);

@@ -502,6 +502,15 @@ contract RemintController is Ownable2Step, ReentrancyGuard {
     }
 
     /**
+     * @notice Get total Remint earned for a specific NFT (PRESALE-003)
+     * @param tokenId NFT token ID
+     * @return Total Remint earned in USDC (6 decimals)
+     */
+    function getRemintEarned(uint256 tokenId) external view returns (uint256) {
+        return _diceData[tokenId].totalRemintEarned;
+    }
+
+    /**
      * @notice Withdraw stuck USDC (emergency function)
      */
     function withdrawUSDC(uint256 amount) external onlyOwner {
