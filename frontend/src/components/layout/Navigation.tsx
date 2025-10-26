@@ -184,6 +184,7 @@ export function Navigation({ activePage }: NavigationProps) {
               anchorEl={presaleAnchorEl}
               open={presaleMenuOpen}
               onClose={handlePresaleClose}
+              disableScrollLock
               sx={{
                 '& .MuiPaper-root': {
                   borderRadius: '12px',
