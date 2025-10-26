@@ -133,7 +133,7 @@ export function DiceRoller() {
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                   <CheckCircle color="success" sx={{ fontSize: '32px' }} />
-                  <Typography variant="h5" fontWeight="bold">
+                  <Typography variant="h5" fontWeight="bold" sx={{ whiteSpace: 'nowrap' }}>
                     {demoResult ? 'Demo Result' : 'Roll Result'}
                   </Typography>
                 </Box>
