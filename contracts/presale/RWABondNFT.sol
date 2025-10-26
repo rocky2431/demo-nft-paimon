@@ -36,8 +36,8 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
     /// @notice VRF Coordinator address
     address public immutable vrfCoordinator;
 
-    /// @notice VRF Subscription ID
-    uint64 public immutable vrfSubscriptionId;
+    /// @notice VRF Subscription ID (mutable for migration support)
+    uint64 public vrfSubscriptionId;
 
     /// @notice VRF Key Hash
     bytes32 public immutable vrfKeyHash;
@@ -90,6 +90,8 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
     event DiceRolled(uint256 indexed tokenId, uint256 requestId, uint8 diceType);
     event DiceResult(uint256 indexed tokenId, uint256 result, uint256 remintEarned);
     event RarityUpgraded(uint256 indexed tokenId, string oldRarity, string newRarity);
+    event VRFSubscriptionUpdated(uint64 indexed oldSubscriptionId, uint64 indexed newSubscriptionId);
+    event VRFRequestFailed(uint256 indexed tokenId, string reason);
 
     // ==================== Constructor ====================
 
@@ -378,9 +380,10 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
     // ==================== Chainlink VRF Functions (Basic Framework) ====================
 
     /**
-     * @notice Request random dice roll for a token (simplified version)
+     * @notice Request random dice roll for a token
      * @param tokenId Token ID to roll dice for
      * @dev Full implementation with weekly limits, social tasks in PRESALE-002
+     * @return requestId The VRF request ID (0 if request failed)
      */
     function requestDiceRoll(uint256 tokenId) external whenNotPaused nonReentrant returns (uint256 requestId) {
         require(ownerOf(tokenId) == msg.sender, "RWABondNFT: caller is not owner");
@@ -389,18 +392,37 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
         BondInfo storage bond = _bondInfo[tokenId];
         require(bond.weeklyRollsLeft > 0, "RWABondNFT: no rolls left this week");
 
-        // Request random words from Chainlink VRF
-        requestId = _requestRandomWords();
+        // Request random words from Chainlink VRF with error handling
+        try this._requestRandomWordsExternal() returns (uint256 _requestId) {
+            requestId = _requestId;
 
-        // Map requestId to tokenId for callback
-        _vrfRequestToTokenId[requestId] = tokenId;
+            // Map requestId to tokenId for callback
+            _vrfRequestToTokenId[requestId] = tokenId;
 
-        // Decrement weekly rolls
-        bond.weeklyRollsLeft--;
+            // Decrement weekly rolls
+            bond.weeklyRollsLeft--;
 
-        emit DiceRolled(tokenId, requestId, bond.diceType);
+            emit DiceRolled(tokenId, requestId, bond.diceType);
+        } catch Error(string memory reason) {
+            // VRF request failed - restore roll and emit error
+            emit VRFRequestFailed(tokenId, reason);
+            return 0;
+        } catch {
+            // Unknown error
+            emit VRFRequestFailed(tokenId, "Unknown VRF error");
+            return 0;
+        }
 
         return requestId;
+    }
+
+    /**
+     * @notice External wrapper for _requestRandomWords to enable try-catch
+     * @dev Only callable by this contract
+     */
+    function _requestRandomWordsExternal() external returns (uint256) {
+        require(msg.sender == address(this), "RWABondNFT: internal only");
+        return _requestRandomWords();
     }
 
     /**
@@ -523,6 +545,18 @@ contract RWABondNFT is ERC721, ERC721URIStorage, Ownable2Step, Pausable, Reentra
         address oldTreasury = treasury;
         treasury = _treasury;
         emit TreasuryUpdated(oldTreasury, _treasury);
+    }
+
+    /**
+     * @notice Update VRF subscription ID (for migration)
+     * @param newSubscriptionId New VRF subscription ID
+     * @dev Only callable by owner. Useful when migrating to a new VRF subscription
+     */
+    function setVRFSubscriptionId(uint64 newSubscriptionId) external onlyOwner {
+        require(newSubscriptionId != 0, "RWABondNFT: zero subscription ID");
+        uint64 oldSubscriptionId = vrfSubscriptionId;
+        vrfSubscriptionId = newSubscriptionId;
+        emit VRFSubscriptionUpdated(oldSubscriptionId, newSubscriptionId);
     }
 
     // ==================== Internal Functions ====================
