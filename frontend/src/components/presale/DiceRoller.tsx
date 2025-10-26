@@ -228,7 +228,6 @@ export function DiceRoller() {
             </Card>
           )}
         </>
-      )}
     </Box>
   );
 }
