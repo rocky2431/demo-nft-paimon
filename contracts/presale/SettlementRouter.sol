@@ -112,12 +112,10 @@ contract SettlementRouter is ReentrancyGuard {
         require(lockDuration >= MIN_LOCK_DURATION, "SettlementRouter: lock duration too short");
         require(lockDuration <= MAX_LOCK_DURATION, "SettlementRouter: lock duration too long");
 
-        // Calculate total HYD amount (1:1 with USDC value)
-        uint256 totalUSDC = BOND_PRINCIPAL + BASE_YIELD;
-
-        // Get Remint rewards earned (if any)
-        uint256 remintEarned = remintController.getRemintEarned(bondTokenId);
-        totalUSDC += remintEarned;
+        // Calculate total USDC value using bondNFT's calculateTotalYield
+        // (This includes both base yield and accumulated Remint)
+        uint256 totalYield = bondNFT.calculateTotalYield(bondTokenId);
+        uint256 totalUSDC = BOND_PRINCIPAL + totalYield;
 
         // Convert USDC to HYD amount (1:1 ratio)
         uint256 hydAmount = totalUSDC * 1e12; // Convert from 6 decimals (USDC) to 18 decimals (HYD)
@@ -145,12 +143,10 @@ contract SettlementRouter is ReentrancyGuard {
         // Validate bond is matured
         require(bondNFT.isMatured(bondTokenId), "SettlementRouter: bond not matured");
 
-        // Calculate total redemption amount
-        uint256 totalAmount = BOND_PRINCIPAL + BASE_YIELD;
-
-        // Get Remint rewards earned (if any)
-        uint256 remintEarned = remintController.getRemintEarned(bondTokenId);
-        totalAmount += remintEarned;
+        // Calculate total redemption amount using bondNFT's calculateTotalYield
+        // (This includes both base yield and accumulated Remint)
+        uint256 totalYield = bondNFT.calculateTotalYield(bondTokenId);
+        uint256 totalAmount = BOND_PRINCIPAL + totalYield;
 
         // Fulfill redemption from Treasury
         treasury.fulfillRedemption(msg.sender, totalAmount);
