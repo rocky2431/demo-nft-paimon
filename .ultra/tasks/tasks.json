@@ -1267,7 +1267,7 @@
       "priority": "P1",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "in_progress",
       "tags": [
         "frontend",
         "ui",
@@ -1289,7 +1289,8 @@
         "Next.js build successful"
       ],
       "technical_notes": "Use wagmi useWriteContract for USDC.approve(RWABondNFT, amount) and RWABondNFT.mint(quantity). Components: QuantitySelector (slider 1-500 with +/- buttons), CostDisplay (100 × quantity USDC), ApprovalButton (check allowance first), MintButton (disabled until approved), NFTDisplayCard (show tokenId, maturity date, initial Bronze rarity). Route: /presale/mint. Max per address: 500 NFTs. Integration: wagmi v2 + RainbowKit. Total investment display: $100K for 500 NFTs.",
-      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md#frontend-development"
+      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md#frontend-development",
+      "started_at": "2025-10-26T16:00:00Z"
     },
     {
       "id": "PRESALE-011",
