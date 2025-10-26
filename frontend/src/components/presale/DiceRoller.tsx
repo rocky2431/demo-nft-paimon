@@ -65,7 +65,7 @@ export function DiceRoller() {
       {/* No NFT Warning */}
       {!tokenId && (
         <Alert severity="warning" sx={{ mb: 3 }}>
-          You don't own any Bond NFTs. Please mint NFTs first to use the dice rolling feature.
+          You don&apos;t own any Bond NFTs. Please mint NFTs first to use the dice rolling feature.
         </Alert>
       )}
 
@@ -204,6 +204,7 @@ export function DiceRoller() {
             </Card>
           )}
         </>
+      )}
     </Box>
   );
 }
