@@ -2145,7 +2145,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "in_progress",
+      "status": "completed",
       "tags": [
         "frontend",
         "treasury",
@@ -2172,7 +2172,8 @@
       ],
       "technical_notes": "Route: /treasury/deposit. Components: RWAAssetSelector.tsx, DepositForm.tsx, HYDMintPreview.tsx. Use wagmi useReadContract(RWAPriceOracle.getPrice) + useReadContract(Treasury.rwaTiers) for preview calculation. useSimulateContract for gas estimation. Color theme: warm gold (#FFD700) for deposit actions.",
       "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-010",
-      "progress_notes": "Phase 1 completed (40%): Infrastructure setup - types, contracts config, constants, core hooks. Remaining: additional hooks, UI components (RWAAssetSelector, HYDMintPreview, DepositForm), deposit page route, and testing."
+      "progress_notes": "100% complete: Full Treasury deposit page implementation with 3 hooks (useRWABalance, useDepositPreview, useTreasuryDeposit), 3 UI components (RWAAssetSelector, HYDMintPreview, DepositForm), and /treasury/deposit route. Features: RWA asset selection (T1/T2/T3), real-time HYD mint preview, health factor calculation, approve/deposit workflow, Material Design 3 compliance with warm gold theme.",
+      "completed_at": "2025-10-27"
     },
     {
       "id": "RWA-011",
