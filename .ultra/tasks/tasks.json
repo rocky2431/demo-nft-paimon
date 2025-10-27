@@ -2183,7 +2183,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "treasury",
@@ -2206,7 +2206,19 @@
         "Export position report (CSV)"
       ],
       "technical_notes": "Route: /treasury/positions. Components: PositionList.tsx, PositionCard.tsx, HealthFactorGauge.tsx. Use wagmi useReadContract(Treasury.positions) + useBlockNumber for auto-refresh. Health factor colors: Green (#8BC34A), Yellow (#FFB74D), Red (#FF6B35). Implement useInterval(refetch, 60000) for auto-refresh. CSV export using papaparse library.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-011"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-011",
+      "started_at": "2025-10-27",
+      "completed_at": "2025-10-27",
+      "progress_notes": [
+        "Phase 1: Component architecture designed",
+        "Phase 2: Custom hooks implemented (useInterval, useUserPositions)",
+        "Phase 3: HealthFactorGauge component with color coding",
+        "Phase 4: PositionCard component with redeem/add collateral actions",
+        "Phase 5: PositionList component with auto-refresh and CSV export",
+        "Phase 6: /treasury/positions page route created",
+        "Phase 7: Navigation menu integration",
+        "All acceptance criteria met: Position list, health factor display, collateralization ratio, liquidation alerts, redeem button with cooldown, add collateral, auto-refresh, CSV export"
+      ]
     },
     {
       "id": "RWA-012",

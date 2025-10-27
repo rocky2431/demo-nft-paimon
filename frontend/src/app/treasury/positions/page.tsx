@@ -1,16 +1,16 @@
 /**
- * Treasury Deposit Page
- * RWA collateral deposit interface with HYD minting preview
+ * Treasury Positions Page
+ * Position monitoring dashboard with health factor tracking and auto-refresh
  */
 
 'use client';
 
 import { Container, Typography, Box } from '@mui/material';
 import { Navigation } from '@/components/layout/Navigation';
-import { DepositForm } from '@/components/treasury/DepositForm';
+import { PositionList } from '@/components/treasury/PositionList';
 import { TREASURY_THEME } from '@/components/treasury/constants';
 
-export default function TreasuryDepositPage() {
+export default function TreasuryPositionsPage() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Top navigation bar */}
@@ -18,7 +18,7 @@ export default function TreasuryDepositPage() {
 
       {/* Main content area */}
       <Container
-        maxWidth="lg"
+        maxWidth="xl"
         sx={{
           pt: 10, // Account for fixed navbar (reduced from 12)
           pb: 8,
@@ -46,7 +46,7 @@ export default function TreasuryDepositPage() {
               fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
             }}
           >
-            Treasury Deposit
+            Position Monitoring
           </Typography>
           <Typography
             variant="h6"
@@ -57,12 +57,12 @@ export default function TreasuryDepositPage() {
               fontSize: { xs: '1rem', sm: '1.125rem' },
             }}
           >
-            Deposit RWA collateral to mint HYD stablecoins
+            Monitor your RWA collateral positions and health factors
           </Typography>
         </Box>
 
-        {/* Deposit form */}
-        <DepositForm />
+        {/* Position list */}
+        <PositionList />
 
         {/* Info section */}
         <Box
@@ -82,20 +82,17 @@ export default function TreasuryDepositPage() {
               mb: 2,
             }}
           >
-            How it works
+            Understanding Health Factor
           </Typography>
           <Box component="ul" sx={{ pl: 2, m: 0 }}>
             <Typography component="li" variant="body2" sx={{ mb: 1, color: TREASURY_THEME.SUBTITLE }}>
-              <strong>Step 1:</strong> Select an RWA asset from the dropdown (T1, T2, or T3 tier)
+              <strong>Healthy (Green, &gt;150%):</strong> Your position is safe with plenty of buffer
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 1, color: TREASURY_THEME.SUBTITLE }}>
-              <strong>Step 2:</strong> Enter the amount you want to deposit as collateral
+              <strong>Warning (Yellow, 115-150%):</strong> Consider adding collateral to improve safety
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 1, color: TREASURY_THEME.SUBTITLE }}>
-              <strong>Step 3:</strong> Approve the Treasury contract to spend your RWA tokens
-            </Typography>
-            <Typography component="li" variant="body2" sx={{ mb: 1, color: TREASURY_THEME.SUBTITLE }}>
-              <strong>Step 4:</strong> Deposit your RWA tokens and receive HYD stablecoins
+              <strong>At Risk (Red, &lt;115%):</strong> Position may be liquidated. Add collateral immediately
             </Typography>
           </Box>
 
@@ -108,20 +105,20 @@ export default function TreasuryDepositPage() {
                 mb: 1,
               }}
             >
-              Important Notes:
+              Position Actions:
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="caption" sx={{ mb: 0.5, color: TREASURY_THEME.CAPTION }}>
-                Higher tier assets (T1) have higher LTV ratios (60%) compared to T3 (40%)
+                <strong>Redeem Collateral:</strong> Withdraw your RWA assets after 7-day cooldown period
               </Typography>
               <Typography component="li" variant="caption" sx={{ mb: 0.5, color: TREASURY_THEME.CAPTION }}>
-                Maintain your Health Factor above 115% to avoid liquidation
+                <strong>Add Collateral:</strong> Deposit more RWA to improve your health factor
               </Typography>
               <Typography component="li" variant="caption" sx={{ mb: 0.5, color: TREASURY_THEME.CAPTION }}>
-                There is a 7-day cooldown period before you can redeem your collateral
+                <strong>Auto-Refresh:</strong> Positions automatically update every 60 seconds
               </Typography>
               <Typography component="li" variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
-                A 0.5% redemption fee applies when withdrawing your collateral
+                <strong>Export CSV:</strong> Download your position history for record keeping
               </Typography>
             </Box>
           </Box>
@@ -137,7 +134,7 @@ export default function TreasuryDepositPage() {
             color: TREASURY_THEME.CAPTION,
           }}
         >
-          RWA Treasury • BSC Network
+          RWA Treasury • BSC Network • Real-time Monitoring
         </Typography>
       </Container>
     </Box>

@@ -7,7 +7,6 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Card,
   CardContent,
   Box,
   TextField,
@@ -18,6 +17,7 @@ import {
   Link,
 } from '@mui/material';
 import { useAccount } from 'wagmi';
+import { StyledCard } from '@/components/common';
 import { RWAAssetSelector } from './RWAAssetSelector';
 import { HYDMintPreview } from './HYDMintPreview';
 import { useRWABalance } from './hooks/useRWABalance';
@@ -84,8 +84,8 @@ export function DepositForm() {
     amountNum > 0 &&
     amountNum >= TREASURY_CONFIG.MIN_DEPOSIT_AMOUNT &&
     amountNum <= TREASURY_CONFIG.MAX_DEPOSIT_AMOUNT;
-  const hassufficientBalance = amountNum > 0 && amountNum <= balance;
-  const hassufficientAllowance = amountNum > 0 && amountNum <= allowance;
+  const hasSufficientBalance = amountNum > 0 && amountNum <= balance;
+  const hasSufficientAllowance = amountNum > 0 && amountNum <= allowance;
   const canApprove = isConnected && selectedAsset && isAmountValid && hasSufficientBalance;
   const canDeposit = canApprove && hasSufficientAllowance;
 
@@ -124,20 +124,14 @@ export function DepositForm() {
     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
       {/* Left: Form */}
       <Box sx={{ flex: 1 }}>
-        <Card
-          sx={{
-            backgroundColor: 'background.paper',
-            borderRadius: 2,
-            border: `2px solid ${TREASURY_THEME.PRIMARY}`,
-          }}
-        >
+        <StyledCard variant="white">
           <CardContent>
             <Typography
               variant="h5"
               sx={{
                 mb: 3,
                 fontWeight: 700,
-                color: TREASURY_THEME.PRIMARY,
+                color: TREASURY_THEME.TITLE,
               }}
             >
               Deposit RWA Collateral
@@ -167,10 +161,10 @@ export function DepositForm() {
                       mb: 1,
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: TREASURY_THEME.SUBTITLE }}>
                       Deposit Amount
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
                       Balance: {isBalanceLoading ? '...' : balance.toFixed(2)}{' '}
                       {assetDetails?.symbol}
                     </Typography>
@@ -199,13 +193,13 @@ export function DepositForm() {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         '& fieldset': {
-                          borderColor: TREASURY_THEME.PRIMARY,
+                          borderColor: TREASURY_THEME.EMPHASIS, // #FF8C00 deep orange
                         },
                         '&:hover fieldset': {
-                          borderColor: TREASURY_THEME.SECONDARY,
+                          borderColor: TREASURY_THEME.EMPHASIS,
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: TREASURY_THEME.PRIMARY,
+                          borderColor: TREASURY_THEME.EMPHASIS,
                         },
                       },
                     }}
@@ -319,7 +313,7 @@ export function DepositForm() {
               </>
             )}
           </CardContent>
-        </Card>
+        </StyledCard>
       </Box>
 
       {/* Right: Preview */}

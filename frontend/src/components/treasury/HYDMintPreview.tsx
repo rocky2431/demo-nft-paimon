@@ -5,7 +5,8 @@
 
 'use client';
 
-import { Card, CardContent, Box, Typography, Divider, CircularProgress, Chip } from '@mui/material';
+import { CardContent, Box, Typography, Divider, CircularProgress, Chip } from '@mui/material';
+import { StyledCard } from '@/components/common';
 import { DepositPreview } from '@/types/treasury';
 import { formatUnits } from 'viem';
 import { TREASURY_THEME, TREASURY_CONFIG } from './constants';
@@ -18,37 +19,25 @@ interface HYDMintPreviewProps {
 export function HYDMintPreview({ preview, isLoading }: HYDMintPreviewProps) {
   if (isLoading) {
     return (
-      <Card
-        sx={{
-          backgroundColor: 'background.paper',
-          borderRadius: 2,
-          border: `2px solid ${TREASURY_THEME.PRIMARY}`,
-        }}
-      >
+      <StyledCard variant="accent">
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress sx={{ color: TREASURY_THEME.PRIMARY }} />
           </Box>
         </CardContent>
-      </Card>
+      </StyledCard>
     );
   }
 
   if (!preview) {
     return (
-      <Card
-        sx={{
-          backgroundColor: 'background.paper',
-          borderRadius: 2,
-          border: `2px solid ${TREASURY_THEME.PRIMARY}`,
-        }}
-      >
+      <StyledCard variant="accent">
         <CardContent>
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
             Enter an amount to see deposit preview
           </Typography>
         </CardContent>
-      </Card>
+      </StyledCard>
     );
   }
 
@@ -70,14 +59,7 @@ export function HYDMintPreview({ preview, isLoading }: HYDMintPreviewProps) {
   const hfStatus = getHealthFactorStatus(preview.healthFactor);
 
   return (
-    <Card
-      sx={{
-        backgroundColor: 'background.paper',
-        borderRadius: 2,
-        border: `2px solid ${TREASURY_THEME.PRIMARY}`,
-        boxShadow: `0 4px 12px rgba(255, 215, 0, 0.15)`,
-      }}
-    >
+    <StyledCard variant="accent">
       <CardContent>
         <Typography
           variant="h6"
@@ -178,7 +160,7 @@ export function HYDMintPreview({ preview, isLoading }: HYDMintPreviewProps) {
           Liquidation occurs at HF ≤ {TREASURY_CONFIG.LIQUIDATION_THRESHOLD}%
         </Typography>
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 }
 

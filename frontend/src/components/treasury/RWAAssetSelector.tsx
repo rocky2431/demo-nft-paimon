@@ -7,7 +7,7 @@
 
 import { FormControl, Select, MenuItem, Box, Typography, Chip } from '@mui/material';
 import { RWAAsset } from '@/types/treasury';
-import { RWA_ASSETS } from './constants';
+import { RWA_ASSETS, TREASURY_THEME } from './constants';
 
 interface RWAAssetSelectorProps {
   selectedAsset: string | null;
@@ -22,7 +22,7 @@ export function RWAAssetSelector({ selectedAsset, onSelectAsset }: RWAAssetSelec
         sx={{
           mb: 1,
           fontWeight: 600,
-          color: 'text.primary',
+          color: TREASURY_THEME.SUBTITLE,
         }}
       >
         Select RWA Asset
@@ -34,18 +34,18 @@ export function RWAAssetSelector({ selectedAsset, onSelectAsset }: RWAAssetSelec
         sx={{
           backgroundColor: 'background.paper',
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#FFD700',
+            borderColor: TREASURY_THEME.EMPHASIS, // #FF8C00 deep orange
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#FF8C00',
+            borderColor: TREASURY_THEME.EMPHASIS,
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#FFD700',
+            borderColor: TREASURY_THEME.EMPHASIS,
           },
         }}
       >
         <MenuItem value="" disabled>
-          <Typography color="text.secondary">Choose an asset...</Typography>
+          <Typography sx={{ color: TREASURY_THEME.CAPTION }}>Choose an asset...</Typography>
         </MenuItem>
         {RWA_ASSETS.filter((asset) => asset.isActive).map((asset: RWAAsset) => (
           <MenuItem key={asset.address} value={asset.address}>
@@ -58,10 +58,10 @@ export function RWAAssetSelector({ selectedAsset, onSelectAsset }: RWAAssetSelec
               }}
             >
               <Box>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                <Typography variant="body1" sx={{ fontWeight: 600, color: TREASURY_THEME.SUBTITLE }}>
                   {asset.symbol}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
                   {asset.name}
                 </Typography>
               </Box>
@@ -80,7 +80,7 @@ export function RWAAssetSelector({ selectedAsset, onSelectAsset }: RWAAssetSelec
                   variant="caption"
                   sx={{
                     fontWeight: 600,
-                    color: '#FF8C00',
+                    color: TREASURY_THEME.EMPHASIS,
                   }}
                 >
                   {asset.ltvRatio}% LTV

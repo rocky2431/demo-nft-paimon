@@ -48,13 +48,30 @@ export const TREASURY_CONFIG = {
   LIQUIDATION_PENALTY: 5, // 5%
 } as const;
 
-// Color Theme (warm colors)
+// Color Theme (warm colors - matching Presale style for consistency)
 export const TREASURY_THEME = {
-  PRIMARY: '#FFD700', // Warm gold
+  // Text colors (matching Presale for unified UX)
+  TITLE: '#D17A00', // Deep orange-brown (main headings)
+  SUBTITLE: '#8B4000', // Brown (descriptions, body text)
+  CAPTION: '#A0522D', // Light brown (small text, captions)
+  EMPHASIS: '#FF8C00', // Deep orange (values, emphasis)
+
+  // UI colors
+  PRIMARY: '#FFD700', // Warm gold (borders, accents)
   SECONDARY: '#FF8C00', // Dark orange
   ACCENT: '#FFA500', // Orange
-  SUCCESS: '#32CD32', // Lime green
-  WARNING: '#FFB84D', // Light orange
-  ERROR: '#DC143C', // Crimson
+  SUCCESS: '#8BC34A', // Light Green (for health factor)
+  WARNING: '#FFB74D', // Deep Orange (for health factor)
+  ERROR: '#FF6B35', // Warm Red-Orange (for health factor)
   BACKGROUND: '#FFF8E7', // Cornsilk
+  CARD_BG: '#FFF8E1', // Light yellow (card backgrounds, matching Presale)
 } as const;
+
+/**
+ * Card styles are now unified in StyledCard component
+ * Import { StyledCard } from '@/components/common'
+ *
+ * Usage:
+ * - <StyledCard variant="white"> for form inputs
+ * - <StyledCard variant="accent"> for highlighted information
+ */
