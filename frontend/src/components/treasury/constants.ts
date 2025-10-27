@@ -74,35 +74,28 @@ export const TREASURY_THEME = {
  */
 export const TREASURY_CARD_STYLES = {
   /**
-   * Primary card style (default) - with subtle golden glow and warm background
+   * Primary card style (default) - matching Presale (no border, shadow only)
    */
   primary: {
-    backgroundColor: TREASURY_THEME.CARD_BG, // Light yellow, matching Presale
-    borderRadius: 3, // 24px (MUI spacing unit * 3)
-    border: `1px solid ${TREASURY_THEME.PRIMARY}`,
+    backgroundColor: TREASURY_THEME.CARD_BG, // Light yellow (#FFF8E1)
+    borderRadius: 2, // 16px - matching Presale
     boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)', // Matching Presale shadow
-    transition: 'box-shadow 0.3s ease',
-    '&:hover': {
-      boxShadow: '0 4px 12px rgba(255, 140, 0, 0.15)',
-    },
   },
   /**
-   * Secondary card style (less emphasis)
+   * Secondary card style (white background)
    */
   secondary: {
     backgroundColor: 'white',
-    borderRadius: 3,
-    border: `1px solid`,
-    borderColor: 'divider',
+    borderRadius: 2,
     boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)',
   },
   /**
-   * Info card style (informational content)
+   * Info card style (informational content with subtle border)
    */
   info: {
     backgroundColor: TREASURY_THEME.CARD_BG, // Light yellow background
     borderRadius: 2,
-    border: `1px solid ${TREASURY_THEME.SECONDARY}`,
-    boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)',
+    border: `1px solid rgba(255, 140, 0, 0.2)`, // Very subtle orange border
+    boxShadow: 'none',
   },
 } as const;
