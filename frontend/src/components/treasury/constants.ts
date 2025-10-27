@@ -68,34 +68,10 @@ export const TREASURY_THEME = {
 } as const;
 
 /**
- * Unified Card Styles
- * Standard card styling to ensure consistency across all Treasury components
- * Matches Presale component styling for better UX consistency
+ * Card styles are now unified in StyledCard component
+ * Import { StyledCard } from '@/components/common'
+ *
+ * Usage:
+ * - <StyledCard variant="white"> for form inputs
+ * - <StyledCard variant="accent"> for highlighted information
  */
-export const TREASURY_CARD_STYLES = {
-  /**
-   * Primary card style (default) - matching Presale (no border, shadow only)
-   */
-  primary: {
-    backgroundColor: TREASURY_THEME.CARD_BG, // Light yellow (#FFF8E1)
-    borderRadius: 2, // 16px - matching Presale
-    boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)', // Matching Presale shadow
-  },
-  /**
-   * Secondary card style (white background)
-   */
-  secondary: {
-    backgroundColor: 'white',
-    borderRadius: 2,
-    boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)',
-  },
-  /**
-   * Info card style (informational content with subtle border)
-   */
-  info: {
-    backgroundColor: TREASURY_THEME.CARD_BG, // Light yellow background
-    borderRadius: 2,
-    border: `1px solid rgba(255, 140, 0, 0.2)`, // Very subtle orange border
-    boxShadow: 'none',
-  },
-} as const;

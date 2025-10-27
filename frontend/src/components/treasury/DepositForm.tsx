@@ -7,7 +7,6 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Card,
   CardContent,
   Box,
   TextField,
@@ -18,12 +17,13 @@ import {
   Link,
 } from '@mui/material';
 import { useAccount } from 'wagmi';
+import { StyledCard } from '@/components/common';
 import { RWAAssetSelector } from './RWAAssetSelector';
 import { HYDMintPreview } from './HYDMintPreview';
 import { useRWABalance } from './hooks/useRWABalance';
 import { useDepositPreview } from './hooks/useDepositPreview';
 import { useTreasuryDeposit } from './hooks/useTreasuryDeposit';
-import { RWA_ASSETS, TREASURY_CONFIG, TREASURY_THEME, TREASURY_CARD_STYLES } from './constants';
+import { RWA_ASSETS, TREASURY_CONFIG, TREASURY_THEME } from './constants';
 
 export function DepositForm() {
   const { address: userAddress, isConnected } = useAccount();
@@ -124,7 +124,7 @@ export function DepositForm() {
     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
       {/* Left: Form */}
       <Box sx={{ flex: 1 }}>
-        <Card sx={TREASURY_CARD_STYLES.secondary}>
+        <StyledCard variant="white">
           <CardContent>
             <Typography
               variant="h5"
@@ -313,7 +313,7 @@ export function DepositForm() {
               </>
             )}
           </CardContent>
-        </Card>
+        </StyledCard>
       </Box>
 
       {/* Right: Preview */}
