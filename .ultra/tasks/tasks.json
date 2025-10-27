@@ -12,8 +12,8 @@
   },
   "stats": {
     "total": 51,
-    "pending": 19,
-    "in_progress": 0,
+    "pending": 18,
+    "in_progress": 1,
     "review": 1,
     "blocked": 0,
     "completed": 31,
@@ -1412,7 +1412,7 @@
       "priority": "P1",
       "complexity": 7,
       "estimated_days": 4,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "ui",
@@ -1434,7 +1434,9 @@
         "TypeScript 0 errors"
       ],
       "technical_notes": "Use wagmi useReadContract for RWABondNFT.balanceOf(), tokenOfOwnerByIndex(), getBondInfo(), accumulatedRemint(). Components: BondCardGrid (responsive grid), BondCard (individual NFT), RarityBadge (colored border), MaturityCountdown (useInterval for live update), YieldBreakdown (table: Base + Remint = Total), SettlementButton (links to /presale/settle). Countdown logic: (maturityDate - now) / 86400 days. Rarity tier: if (remint < 2) Bronze, else if (remint < 4) Silver, etc. Route: /presale/dashboard.",
-      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md#frontend-development"
+      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md#frontend-development",
+      "started_date": "2025-10-27",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "PRESALE-015",
