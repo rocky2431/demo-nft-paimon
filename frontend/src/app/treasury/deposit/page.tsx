@@ -8,7 +8,7 @@
 import { Container, Typography, Box } from '@mui/material';
 import { Navigation } from '@/components/layout/Navigation';
 import { DepositForm } from '@/components/treasury/DepositForm';
-import { TREASURY_THEME } from '@/components/treasury/constants';
+import { TREASURY_THEME, TREASURY_CARD_STYLES } from '@/components/treasury/constants';
 
 export default function TreasuryDepositPage() {
   return (
@@ -67,11 +67,9 @@ export default function TreasuryDepositPage() {
         {/* Info section */}
         <Box
           sx={{
+            ...TREASURY_CARD_STYLES.info,
             mt: 6,
             p: 3,
-            backgroundColor: 'background.paper',
-            borderRadius: 2,
-            border: `1px solid ${TREASURY_THEME.SECONDARY}`,
           }}
         >
           <Typography

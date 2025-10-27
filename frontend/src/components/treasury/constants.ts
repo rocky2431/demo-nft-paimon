@@ -53,8 +53,48 @@ export const TREASURY_THEME = {
   PRIMARY: '#FFD700', // Warm gold
   SECONDARY: '#FF8C00', // Dark orange
   ACCENT: '#FFA500', // Orange
-  SUCCESS: '#32CD32', // Lime green
-  WARNING: '#FFB84D', // Light orange
-  ERROR: '#DC143C', // Crimson
+  SUCCESS: '#8BC34A', // Light Green (for health factor)
+  WARNING: '#FFB74D', // Deep Orange (for health factor)
+  ERROR: '#FF6B35', // Warm Red-Orange (for health factor)
   BACKGROUND: '#FFF8E7', // Cornsilk
+} as const;
+
+/**
+ * Unified Card Styles
+ * Standard card styling to ensure consistency across all Treasury components
+ * Matches Presale component styling for better UX consistency
+ */
+export const TREASURY_CARD_STYLES = {
+  /**
+   * Primary card style (default) - with subtle golden glow
+   */
+  primary: {
+    backgroundColor: 'background.paper',
+    borderRadius: 3, // 24px (MUI spacing unit * 3)
+    border: `1px solid ${TREASURY_THEME.PRIMARY}`,
+    boxShadow: '0 4px 12px rgba(255, 215, 0, 0.12)',
+    transition: 'box-shadow 0.3s ease',
+    '&:hover': {
+      boxShadow: '0 6px 20px rgba(255, 215, 0, 0.2)',
+    },
+  },
+  /**
+   * Secondary card style (less emphasis)
+   */
+  secondary: {
+    backgroundColor: 'background.paper',
+    borderRadius: 3,
+    border: `1px solid`,
+    borderColor: 'divider',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+  },
+  /**
+   * Info card style (informational content)
+   */
+  info: {
+    backgroundColor: 'background.paper',
+    borderRadius: 2,
+    border: `1px solid ${TREASURY_THEME.SECONDARY}`,
+    boxShadow: 'none',
+  },
 } as const;

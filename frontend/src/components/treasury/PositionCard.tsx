@@ -30,7 +30,7 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { formatUnits } from 'viem';
 import { PositionWithMetadata } from './hooks/useUserPositions';
 import { HealthFactorGauge, getHealthFactorStatus } from './HealthFactorGauge';
-import { TREASURY_THEME } from './constants';
+import { TREASURY_THEME, TREASURY_CARD_STYLES } from './constants';
 
 interface PositionCardProps {
   position: PositionWithMetadata;
@@ -114,13 +114,14 @@ export function PositionCard({ position, onRedeem, onAddCollateral }: PositionCa
     <>
       <Card
         sx={{
-          backgroundColor: 'background.paper',
-          borderRadius: 2,
-          border: `2px solid ${isAtRisk ? hfStatus.color : TREASURY_THEME.PRIMARY}`,
-          transition: 'box-shadow 0.3s',
-          '&:hover': {
-            boxShadow: `0 4px 12px ${isAtRisk ? hfStatus.color : TREASURY_THEME.PRIMARY}40`,
-          },
+          ...TREASURY_CARD_STYLES.primary,
+          ...(isAtRisk && {
+            border: `1px solid ${hfStatus.color}`,
+            boxShadow: `0 4px 12px ${hfStatus.color}40`,
+            '&:hover': {
+              boxShadow: `0 6px 20px ${hfStatus.color}50`,
+            },
+          }),
         }}
       >
         <CardContent>

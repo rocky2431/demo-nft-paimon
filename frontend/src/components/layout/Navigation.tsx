@@ -218,11 +218,11 @@ export function Navigation({ activePage }: NavigationProps) {
                   py: 1.5,
                   px: 2,
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
                   },
                 }}
               >
-                <SavingsIcon sx={{ mr: 1.5, color: '#FFD700' }} />
+                <SavingsIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                 <Typography variant="body2" fontWeight={600}>
                   Deposit RWA
                 </Typography>
@@ -235,11 +235,11 @@ export function Navigation({ activePage }: NavigationProps) {
                   py: 1.5,
                   px: 2,
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
                   },
                 }}
               >
-                <MonitorHeartIcon sx={{ mr: 1.5, color: '#FFD700' }} />
+                <MonitorHeartIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                 <Typography variant="body2" fontWeight={600}>
                   My Positions
                 </Typography>

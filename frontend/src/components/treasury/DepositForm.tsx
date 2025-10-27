@@ -23,7 +23,7 @@ import { HYDMintPreview } from './HYDMintPreview';
 import { useRWABalance } from './hooks/useRWABalance';
 import { useDepositPreview } from './hooks/useDepositPreview';
 import { useTreasuryDeposit } from './hooks/useTreasuryDeposit';
-import { RWA_ASSETS, TREASURY_CONFIG, TREASURY_THEME } from './constants';
+import { RWA_ASSETS, TREASURY_CONFIG, TREASURY_THEME, TREASURY_CARD_STYLES } from './constants';
 
 export function DepositForm() {
   const { address: userAddress, isConnected } = useAccount();
@@ -124,13 +124,7 @@ export function DepositForm() {
     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
       {/* Left: Form */}
       <Box sx={{ flex: 1 }}>
-        <Card
-          sx={{
-            backgroundColor: 'background.paper',
-            borderRadius: 2,
-            border: `2px solid ${TREASURY_THEME.PRIMARY}`,
-          }}
-        >
+        <Card sx={TREASURY_CARD_STYLES.primary}>
           <CardContent>
             <Typography
               variant="h5"

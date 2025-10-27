@@ -25,7 +25,7 @@ import { useUserPositions } from './hooks/useUserPositions';
 import { useInterval } from './hooks/useInterval';
 import { PositionCard } from './PositionCard';
 import { HealthFactorGauge } from './HealthFactorGauge';
-import { TREASURY_THEME } from './constants';
+import { TREASURY_THEME, TREASURY_CARD_STYLES } from './constants';
 
 const AUTO_REFRESH_INTERVAL = 60000; // 60 seconds
 
@@ -125,9 +125,7 @@ export function PositionList() {
     return (
       <Card
         sx={{
-          backgroundColor: 'background.paper',
-          borderRadius: 2,
-          border: `2px solid ${TREASURY_THEME.PRIMARY}`,
+          ...TREASURY_CARD_STYLES.primary,
           textAlign: 'center',
           py: 6,
         }}
@@ -217,14 +215,7 @@ export function PositionList() {
       </Box>
 
       {/* Overall stats summary */}
-      <Card
-        sx={{
-          backgroundColor: 'background.paper',
-          borderRadius: 2,
-          border: `2px solid ${TREASURY_THEME.PRIMARY}`,
-          mb: 3,
-        }}
-      >
+      <Card sx={{ ...TREASURY_CARD_STYLES.primary, mb: 3 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: TREASURY_THEME.PRIMARY }}>
             Portfolio Overview
