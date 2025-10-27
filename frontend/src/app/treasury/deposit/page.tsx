@@ -20,7 +20,7 @@ export default function TreasuryDepositPage() {
       <Container
         maxWidth="lg"
         sx={{
-          pt: 12, // Account for fixed navbar
+          pt: 10, // Account for fixed navbar (reduced from 12)
           pb: 8,
           px: {
             xs: 2,
@@ -32,9 +32,9 @@ export default function TreasuryDepositPage() {
         {/* Header section */}
         <Box
           sx={{
-            mb: 6,
+            mb: 4,
             textAlign: 'center',
-            pt: { xs: 4, sm: 6 },
+            pt: { xs: 2, sm: 3 },
           }}
         >
           <Typography
