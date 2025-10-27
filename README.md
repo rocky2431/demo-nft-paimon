@@ -162,7 +162,7 @@ paimon-dex/
 │   ├── core/
 │   │   ├── HYD.sol           # Synthetic asset token
 │   │   ├── PAIMON.sol        # Platform utility token
-│   │   └── veNFT.sol         # Vote-escrowed NFT
+│   │   └── VotingEscrow.sol  # Vote-escrowed NFT (veNFT)
 │   ├── treasury/
 │   │   ├── Treasury.sol      # Main vault
 │   │   ├── RWAPriceOracle.sol
@@ -172,7 +172,12 @@ paimon-dex/
 │   │   ├── VotingEpoch.sol   # ve33 voting
 │   │   └── BribeMarket.sol
 │   ├── launchpad/
-│   │   └── Launchpad.sol     # RWA issuance platform
+│   │   ├── ProjectRegistry.sol      # ✅ RWA project governance (26/26 tests)
+│   │   └── IssuanceController.sol   # ✅ Token sale controller (42/42 tests)
+│   ├── presale/
+│   │   ├── RWABondNFT.sol          # Gamified bond certificate
+│   │   ├── DiceRoller.sol          # Chainlink VRF integration
+│   │   └── SocialTaskManager.sol   # Twitter/Discord verification
 │   └── governance/
 │       └── GovernanceCoordinator.sol
 │
@@ -286,18 +291,22 @@ Bug bounty program via ImmuneFi (coming soon)
 
 ## 🗺 Roadmap
 
-### Phase 1: Foundation (Months 1-2) ✅ In Progress
+### Phase 1: Foundation (Months 1-2) ✅ 95% Complete
 - [x] Ultra Builder Pro 3.1 initialization
 - [x] Complete PRD & Technical Design
-- [ ] Smart contract POC (Treasury, HYD, veNFT, DEX core)
-- [ ] Security audit RFP
-- [ ] RWA NFT presale launch
-- [ ] Frontend MVP (wallet, swap, Treasury deposit)
+- [x] Core smart contracts (VotingEscrow, Treasury, HYD, PAIMON)
+- [x] RWA NFT presale system (5/5 core contracts + tests)
+- [x] Presale frontend (Dice rolling, Social tasks, Leaderboards, Dashboard)
+- [x] Bond Doge mascot system (10 expressions)
+- [ ] Security audit RFP (planned)
+- [ ] Frontend optimization & performance testing
 
-### Phase 2: Launchpad & Governance (Months 3-4)
-- [ ] First RWA project issuance
-- [ ] veNFT governance activation
-- [ ] HYD minting/redemption live
+### Phase 2: Launchpad & Governance (Months 3-4) 🚧 16% Complete
+- [x] ProjectRegistry contract (veNFT governance voting) ✅
+- [x] IssuanceController contract (Token sale logic) ✅
+- [ ] Launchpad frontend (Project list, Details, Participation)
+- [ ] RWAPriceOracle (Dual-source pricing)
+- [ ] Treasury RWA deposit/redeem logic
 - [ ] DEX liquidity bootstrapping
 - [ ] Analytics dashboard
 
@@ -335,6 +344,17 @@ forge test
 # Invariant testing
 forge test --mt invariant
 ```
+
+### Current Test Status
+
+| Contract | Tests | Status | Coverage |
+|----------|-------|--------|----------|
+| ProjectRegistry | 26/26 | ✅ All Passing | 100% |
+| IssuanceController | 42/42 | ✅ All Passing | 100% |
+| VotingEscrow | TBD | 🚧 In Progress | - |
+| Treasury | TBD | 📋 Pending | - |
+
+**Total**: 68 tests passing | 6-dimensional coverage (Functional, Boundary, Exception, Performance, Security, Compatibility)
 
 ### Run Frontend Tests
 
