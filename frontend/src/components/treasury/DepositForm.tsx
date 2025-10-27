@@ -131,7 +131,7 @@ export function DepositForm() {
               sx={{
                 mb: 3,
                 fontWeight: 700,
-                color: TREASURY_THEME.PRIMARY,
+                color: TREASURY_THEME.TITLE,
               }}
             >
               Deposit RWA Collateral
@@ -161,10 +161,10 @@ export function DepositForm() {
                       mb: 1,
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: TREASURY_THEME.SUBTITLE }}>
                       Deposit Amount
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
                       Balance: {isBalanceLoading ? '...' : balance.toFixed(2)}{' '}
                       {assetDetails?.symbol}
                     </Typography>
