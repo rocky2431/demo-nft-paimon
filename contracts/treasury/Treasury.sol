@@ -98,6 +98,22 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Basis points denominator (100% = 10000)
     uint256 public constant BPS_DENOMINATOR = 10000;
 
+    // Liquidation constants (RWA-009)
+    /// @notice Liquidation threshold (115% as percentage value)
+    uint256 public constant LIQUIDATION_THRESHOLD = 115;
+
+    /// @notice Target health factor after liquidation (125% as percentage value)
+    uint256 public constant TARGET_HEALTH_FACTOR = 125;
+
+    /// @notice Total liquidation penalty (5% = 500 basis points)
+    uint256 public constant LIQUIDATION_PENALTY = 500;
+
+    /// @notice Liquidator share of penalty (4% = 400 basis points)
+    uint256 public constant LIQUIDATOR_SHARE = 400;
+
+    /// @notice Protocol share of penalty (1% = 100 basis points)
+    uint256 public constant PROTOCOL_SHARE = 100;
+
     /// @notice RWA tier configuration
     struct RWATier {
         address oracle;          // Price oracle address
@@ -153,6 +169,16 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
 
     /// @notice Emitted when user redeems RWA
     event RWARedeemed(address indexed user, address indexed asset, uint256 rwaAmount, uint256 hydBurned, uint256 fee);
+
+    /// @notice Emitted when a position is liquidated (RWA-009)
+    event RWALiquidated(
+        address indexed user,
+        address indexed asset,
+        address indexed liquidator,
+        uint256 rwaSeized,
+        uint256 hydRepaid,
+        uint256 penalty
+    );
 
     // ==================== Custom Errors ====================
 
@@ -642,6 +668,170 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
                 break;
             }
         }
+    }
+
+    // ==================== RWA-009: Liquidation Module ====================
+
+    /**
+     * @notice Check if a position is liquidatable
+     * @param user User address
+     * @param asset RWA asset address
+     * @return True if position can be liquidated
+     */
+    function isLiquidatable(address user, address asset) public view returns (bool) {
+        RWAPosition memory position = userPositions[user][asset];
+
+        // No debt = not liquidatable
+        if (position.hydMinted == 0) {
+            return false;
+        }
+
+        // Calculate health factor
+        uint256 hf = this.getHealthFactor(user);
+
+        // Liquidatable if HF <= 115%
+        return hf <= LIQUIDATION_THRESHOLD;
+    }
+
+    /**
+     * @notice Get liquidation information for a position
+     * @param user User address
+     * @param asset RWA asset address
+     * @return _isLiquidatable Whether position is liquidatable
+     * @return healthFactor Current health factor
+     * @return maxLiquidatable Maximum amount that can be liquidated
+     * @return penalty Liquidation penalty amount
+     */
+    function getLiquidationInfo(address user, address asset)
+        external
+        view
+        returns (
+            bool _isLiquidatable,
+            uint256 healthFactor,
+            uint256 maxLiquidatable,
+            uint256 penalty
+        )
+    {
+        RWAPosition memory position = userPositions[user][asset];
+
+        // Get health factor
+        healthFactor = this.getHealthFactor(user);
+
+        // Check if liquidatable (HF <= 115%)
+        _isLiquidatable = healthFactor <= LIQUIDATION_THRESHOLD && position.hydMinted > 0;
+
+        if (_isLiquidatable) {
+            // Max liquidatable = full debt (can liquidate entire position)
+            maxLiquidatable = position.hydMinted;
+
+            // Calculate penalty: (rwaAmount * price * LIQUIDATION_PENALTY) / BPS_DENOMINATOR
+            RWATier memory tier = rwaAssets[asset];
+            IRWAPriceOracle oracle = IRWAPriceOracle(tier.oracle);
+            uint256 price = oracle.getPrice();
+            uint256 rwaValue = (position.rwaAmount * price) / 1e18;
+            penalty = (rwaValue * LIQUIDATION_PENALTY) / BPS_DENOMINATOR;
+        }
+
+        return (_isLiquidatable, healthFactor, maxLiquidatable, penalty);
+    }
+
+    /**
+     * @notice Liquidate an undercollateralized position
+     * @param user User to liquidate
+     * @param asset RWA asset address
+     * @param hydAmount Amount of HYD debt to repay
+     */
+    function liquidate(address user, address asset, uint256 hydAmount)
+        external
+        whenNotPaused
+        nonReentrant
+    {
+        RWAPosition storage position = userPositions[user][asset];
+
+        // Check position exists and has debt
+        require(position.hydMinted > 0, "No debt to liquidate");
+
+        // Check position is liquidatable
+        require(isLiquidatable(user, asset), "Position is not liquidatable");
+
+        // Calculate RWA amount to seize (based on HYD debt repaid)
+        RWATier memory tier = rwaAssets[asset];
+        IRWAPriceOracle oracle = IRWAPriceOracle(tier.oracle);
+        uint256 price = oracle.getPrice();
+
+        // For partial liquidation, calculate amount needed to restore to 125% HF
+        uint256 actualHydAmount;
+        if (hydAmount < position.hydMinted) {
+            // Partial liquidation: calculate required amount to restore to TARGET_HEALTH_FACTOR (125%)
+            uint256 collateralValue = (position.rwaAmount * price) / 1e18;
+            uint256 debtValue = position.hydMinted;
+
+            // Mathematical derivation:
+            // New HF = (C - 1.05ΔH) / (D - ΔH) = 1.25
+            // Solving for ΔH: ΔH = (1.25D - C) / 0.20 = (1.25D - C) * 5
+            //
+            // To avoid decimals, multiply by 100:
+            // numerator = 125 * D - 100 * C
+            // denominator = 20
+            uint256 numerator = (125 * debtValue) - (100 * collateralValue);
+            uint256 requiredHydAmount = numerator / 20;
+
+            // Use the required amount (ignore user's hydAmount for partial liquidation)
+            actualHydAmount = requiredHydAmount;
+        } else {
+            // Full liquidation: cap to available debt
+            actualHydAmount = position.hydMinted;
+        }
+
+        // Convert HYD to base RWA amount (1:1 USD peg)
+        uint256 baseRWA = (actualHydAmount * 1e18) / price;
+
+        // Calculate penalty distribution
+        uint256 liquidatorBonus = (baseRWA * LIQUIDATOR_SHARE) / BPS_DENOMINATOR;  // 4%
+        uint256 protocolFee = (baseRWA * PROTOCOL_SHARE) / BPS_DENOMINATOR;  // 1%
+
+        // Total RWA to deduct from position = base + 5% penalty
+        uint256 totalDeducted = baseRWA + liquidatorBonus + protocolFee;
+
+        // If insufficient collateral, adjust to maximum liquidatable amount
+        // maxRWA * 1.05 = position.rwaAmount
+        // maxRWA = position.rwaAmount / 1.05
+        if (totalDeducted > position.rwaAmount) {
+            // Calculate max base RWA we can seize (accounting for 5% penalty)
+            baseRWA = (position.rwaAmount * BPS_DENOMINATOR) / (BPS_DENOMINATOR + LIQUIDATION_PENALTY);
+            actualHydAmount = (baseRWA * price) / 1e18;
+
+            // Recalculate penalty distribution
+            liquidatorBonus = (baseRWA * LIQUIDATOR_SHARE) / BPS_DENOMINATOR;
+            protocolFee = (baseRWA * PROTOCOL_SHARE) / BPS_DENOMINATOR;
+            totalDeducted = baseRWA + liquidatorBonus + protocolFee;
+        }
+
+        // Liquidator receives base + 4% bonus
+        uint256 totalSeized = baseRWA + liquidatorBonus;
+
+        // Transfer HYD from liquidator to burn address
+        // Note: Using transfer instead of burnFrom because burnFrom is restricted to PSM-only
+        bool success = hydToken.transferFrom(msg.sender, BURN_ADDRESS, actualHydAmount);
+        if (!success) revert InsufficientHYDBalance();
+
+        // Transfer seized RWA collateral to liquidator (base + 4% liquidator bonus)
+        IERC20(asset).safeTransfer(msg.sender, totalSeized);
+
+        // Protocol retains 1% penalty in Treasury (no explicit transfer needed)
+
+        // Update position
+        position.rwaAmount -= totalDeducted;
+        position.hydMinted -= actualHydAmount;
+
+        // Clean up if fully liquidated
+        if (position.hydMinted == 0 || position.rwaAmount == 0) {
+            delete userPositions[user][asset];
+            _removeAssetFromUserList(user, asset);
+        }
+
+        // Emit event
+        emit RWALiquidated(user, asset, msg.sender, totalSeized, actualHydAmount, liquidatorBonus + protocolFee);
     }
 
     // ==================== PRESALE-008: Bond NFT Settlement Integration ====================
