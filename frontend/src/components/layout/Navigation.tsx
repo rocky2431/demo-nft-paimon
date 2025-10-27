@@ -10,8 +10,10 @@ import LocalActivityIcon from '@mui/icons-material/LocalActivity';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import SavingsIcon from '@mui/icons-material/Savings';
 
-export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale';
+export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale' | 'treasury';
 
 interface NavigationProps {
   /**
@@ -41,6 +43,17 @@ export function Navigation({ activePage }: NavigationProps) {
 
   const handlePresaleClose = () => {
     setPresaleAnchorEl(null);
+  };
+
+  const [treasuryAnchorEl, setTreasuryAnchorEl] = useState<null | HTMLElement>(null);
+  const treasuryMenuOpen = Boolean(treasuryAnchorEl);
+
+  const handleTreasuryClick = (event: React.MouseEvent<HTMLElement>) => {
+    setTreasuryAnchorEl(event.currentTarget);
+  };
+
+  const handleTreasuryClose = () => {
+    setTreasuryAnchorEl(null);
   };
 
   return (
@@ -150,6 +163,70 @@ export function Navigation({ activePage }: NavigationProps) {
                 Vote
               </Typography>
             </Link>
+
+            {/* Treasury Dropdown */}
+            <Box
+              onClick={handleTreasuryClick}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Typography
+                variant="body1"
+                fontWeight={600}
+                sx={{
+                  color: activePage === 'treasury' ? 'primary.main' : 'text.secondary',
+                  transition: 'color 0.3s',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Treasury
+              </Typography>
+              <ArrowDropDownIcon
+                sx={{
+                  color: activePage === 'treasury' ? 'primary.main' : 'text.secondary',
+                  transition: 'transform 0.3s',
+                  transform: treasuryMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </Box>
+
+            <Menu
+              anchorEl={treasuryAnchorEl}
+              open={treasuryMenuOpen}
+              onClose={handleTreasuryClose}
+              disableScrollLock
+              sx={{
+                '& .MuiPaper-root': {
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                  mt: 1,
+                },
+              }}
+            >
+              <MenuItem
+                component={Link}
+                href="/treasury/deposit"
+                onClick={handleTreasuryClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+                  },
+                }}
+              >
+                <SavingsIcon sx={{ mr: 1.5, color: '#FFD700' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Deposit RWA
+                </Typography>
+              </MenuItem>
+            </Menu>
 
             {/* Presale Dropdown */}
             <Box
