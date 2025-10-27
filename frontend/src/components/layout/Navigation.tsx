@@ -7,6 +7,7 @@ import { useState } from 'react';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import CasinoIcon from '@mui/icons-material/Casino';
 import LocalActivityIcon from '@mui/icons-material/LocalActivity';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale';
 
@@ -225,6 +226,23 @@ export function Navigation({ activePage }: NavigationProps) {
                 <CasinoIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                 <Typography variant="body2" fontWeight={600}>
                   Dice Rolling
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                href="/presale/tasks"
+                onClick={handlePresaleClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <EmojiEventsIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Social Tasks
                 </Typography>
               </MenuItem>
             </Menu>
