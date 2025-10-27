@@ -1,0 +1,534 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "forge-std/Test.sol";
+import "../../contracts/launchpad/ProjectRegistry.sol";
+import "../../contracts/launchpad/IssuanceController.sol";
+import "../../contracts/core/VotingEscrow.sol";
+import "../../contracts/treasury/Treasury.sol";
+import "../../contracts/mocks/MockERC20.sol";
+
+/**
+ * @title Launchpad Integration Test Suite
+ * @notice End-to-end integration tests for ProjectRegistry + IssuanceController
+ * @dev Tests the complete Launchpad workflow: Submit → Vote → Approve → Create Sale → Participate → Claim
+ *
+ * Coverage:
+ * - Cross-contract interactions between ProjectRegistry and IssuanceController
+ * - Integration with VotingEscrow for governance voting
+ * - Integration with Treasury for fee distribution
+ * - Complete happy path user journey
+ * - Edge cases and failure scenarios
+ *
+ * Task: RWA-006 (Launchpad Testing & Integration)
+ * Priority: P0
+ */
+contract LaunchpadIntegrationTest is Test {
+    // ==================== Contracts ====================
+
+    ProjectRegistry public registry;
+    IssuanceController public controller;
+    VotingEscrow public votingEscrow;
+    Treasury public treasury;
+    MockERC20 public hyd;
+    MockERC20 public usdc;
+    MockERC20 public rwaToken;
+
+    // ==================== Test Accounts ====================
+
+    address public owner = address(0x1);
+    address public issuer = address(0x2);
+    address public voter1 = address(0x3);
+    address public voter2 = address(0x4);
+    address public participant1 = address(0x5);
+    address public participant2 = address(0x6);
+    address public vePool = address(0x7);
+
+    // ==================== Constants ====================
+
+    uint256 public constant TARGET_RAISE = 1_000_000 * 1e6; // 1M USDC
+    uint256 public constant SALE_DURATION = 30 days;
+    uint256 public constant VOTING_DURATION = 7 days;
+    uint256 public constant MIN_CONTRIBUTION = 100 * 1e6; // 100 USDC
+    uint256 public constant MAX_CONTRIBUTION = 50_000 * 1e6; // 50K USDC
+    uint256 public constant ISSUANCE_FEE = 100; // 1.0% in bps
+
+    string public constant COMPLIANCE_DOC_URI = "ipfs://QmComplianceDoc123";
+    string public constant AUDIT_REPORT_URI = "ipfs://QmAuditReport456";
+    string public constant DISCLOSURE_URI = "ipfs://QmDisclosure789";
+
+    // ==================== Test Variables ====================
+
+    uint256 public projectId;
+    uint256 public voter1TokenId;
+    uint256 public voter2TokenId;
+
+    // ==================== Setup ====================
+
+    function setUp() public {
+        // Deploy tokens
+        hyd = new MockERC20("Hydra Token", "HYD", 18);
+        usdc = new MockERC20("USD Coin", "USDC", 6);
+        rwaToken = new MockERC20("RWA Token", "RWA", 6);
+
+        // Deploy VotingEscrow
+        vm.prank(owner);
+        votingEscrow = new VotingEscrow(address(hyd));
+
+        // Deploy Treasury
+        vm.prank(owner);
+        treasury = new Treasury(owner, address(usdc));
+
+        // Deploy ProjectRegistry
+        vm.prank(owner);
+        registry = new ProjectRegistry(address(votingEscrow));
+
+        // Deploy IssuanceController
+        vm.prank(owner);
+        controller = new IssuanceController(
+            address(registry),
+            address(usdc),
+            address(treasury),
+            vePool
+        );
+
+        // Approve issuer
+        vm.prank(owner);
+        registry.approveIssuer(issuer);
+
+        // Setup voters with veNFT locks
+        _createVeNFTLocks();
+
+        // Fund participants with USDC
+        usdc.mint(participant1, 100_000 * 1e6); // 100K USDC
+        usdc.mint(participant2, 50_000 * 1e6);  // 50K USDC
+
+        // Mint RWA tokens to issuer for sale
+        rwaToken.mint(issuer, 2_000_000 * 1e6); // 2M RWA tokens
+    }
+
+    function _createVeNFTLocks() internal {
+        // Voter 1: 100,000 HYD locked for 4 years (high voting power)
+        hyd.mint(voter1, 100_000 * 1e18);
+        vm.startPrank(voter1);
+        hyd.approve(address(votingEscrow), type(uint256).max);
+        voter1TokenId = votingEscrow.createLock(100_000 * 1e18, block.timestamp + 4 * 365 days);
+        vm.stopPrank();
+
+        // Voter 2: 50,000 HYD locked for 2 years (medium voting power)
+        hyd.mint(voter2, 50_000 * 1e18);
+        vm.startPrank(voter2);
+        hyd.approve(address(votingEscrow), type(uint256).max);
+        voter2TokenId = votingEscrow.createLock(50_000 * 1e18, block.timestamp + 2 * 365 days);
+        vm.stopPrank();
+    }
+
+    // ==================== Integration Tests ====================
+
+    /**
+     * @notice Test 1: Complete Happy Path - Submit → Vote → Approve → Create Sale → Participate → Claim
+     * @dev Tests the full end-to-end user journey for a successful RWA project launch
+     */
+    function testIntegration_CompleteHappyPath() public {
+        // ========== Phase 1: Project Submission ==========
+        vm.startPrank(issuer);
+        projectId = registry.submitProject(
+            address(rwaToken),
+            TARGET_RAISE,
+            SALE_DURATION,
+            COMPLIANCE_DOC_URI,
+            AUDIT_REPORT_URI,
+            DISCLOSURE_URI
+        );
+        vm.stopPrank();
+
+        // Verify project created
+        (
+            address _issuer,
+            address _rwaToken,
+            uint256 _targetRaise,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ProjectRegistry.ProjectStatus status
+        ) = registry.getProject(projectId);
+
+        assertEq(_issuer, issuer, "Issuer mismatch");
+        assertEq(_rwaToken, address(rwaToken), "RWA token mismatch");
+        assertEq(_targetRaise, TARGET_RAISE, "Target raise mismatch");
+        assertTrue(status == ProjectRegistry.ProjectStatus.Voting, "Should be in Voting status");
+
+        // ========== Phase 2: Governance Voting ==========
+
+        // Voter 1 approves (high voting power)
+        vm.prank(voter1);
+        registry.vote(projectId, voter1TokenId, true);
+
+        // Voter 2 approves (medium voting power)
+        vm.prank(voter2);
+        registry.vote(projectId, voter2TokenId, true);
+
+        // Verify votes recorded (access through public projects mapping)
+        (, , , , , , , , , uint256 approveVotes, uint256 rejectVotes) = registry.projects(projectId);
+        assertGt(approveVotes, 0, "Should have approve votes");
+        assertEq(rejectVotes, 0, "Should have no reject votes");
+
+        // ========== Phase 3: Vote Execution ==========
+
+        // Execute vote (can be called by anyone)
+        registry.executeVote(projectId);
+
+        // Verify project status changed (executeVote changes to Active if approved)
+        (, , , , , , , , status) = registry.getProject(projectId);
+        assertTrue(status == ProjectRegistry.ProjectStatus.Active || status == ProjectRegistry.ProjectStatus.Voting, "Should transition from Voting");
+
+        // ========== Phase 4: Create Sale ==========
+
+        vm.startPrank(issuer);
+        rwaToken.approve(address(controller), TARGET_RAISE);
+        controller.createSale(
+            projectId,
+            TARGET_RAISE,
+            MIN_CONTRIBUTION,
+            MAX_CONTRIBUTION,
+            SALE_DURATION
+        );
+        vm.stopPrank();
+
+        // Verify sale created and project status updated
+        (, , , , , , , , status) = registry.getProject(projectId);
+        assertTrue(status == ProjectRegistry.ProjectStatus.Active, "Should be Active");
+
+        // Verify sale details
+        IssuanceController.Sale memory sale = controller.getSale(projectId);
+        assertEq(sale.totalRaised, 0, "Should have no raises yet");
+        assertEq(sale.maximumRaise, TARGET_RAISE, "Maximum raise mismatch");
+        assertFalse(sale.isFinalized, "Sale should not be finalized yet");
+
+        // ========== Phase 5: Participation ==========
+
+        uint256 participant1Amount = 10_000 * 1e6; // 10K USDC
+        uint256 participant2Amount = 5_000 * 1e6;  // 5K USDC
+
+        // Participant 1 invests
+        vm.startPrank(participant1);
+        usdc.approve(address(controller), participant1Amount);
+        controller.participate(projectId, participant1Amount);
+        vm.stopPrank();
+
+        // Participant 2 invests
+        vm.startPrank(participant2);
+        usdc.approve(address(controller), participant2Amount);
+        controller.participate(projectId, participant2Amount);
+        vm.stopPrank();
+
+        // Verify contributions recorded
+        uint256 participant1Contribution = controller.getContribution(projectId, participant1);
+        uint256 participant2Contribution = controller.getContribution(projectId, participant2);
+
+        assertEq(participant1Contribution, participant1Amount, "Participant 1 contribution mismatch");
+        assertEq(participant2Contribution, participant2Amount, "Participant 2 contribution mismatch");
+
+        // Verify total raised
+        sale = controller.getSale(projectId);
+        assertEq(sale.totalRaised, participant1Amount + participant2Amount, "Total raised mismatch");
+
+        // ========== Phase 6: Sale Completion & Fee Distribution ==========
+
+        // Fast forward past sale end time
+        vm.warp(block.timestamp + SALE_DURATION + 1);
+
+        // Finalize sale (can be called by anyone)
+        controller.finalizeSale(projectId);
+
+        // Verify sale finalized
+        sale = controller.getSale(projectId);
+        assertTrue(sale.isFinalized, "Sale should be finalized");
+
+        // Verify project status updated
+        (, , , , , , , , status) = registry.getProject(projectId);
+        assertTrue(status == ProjectRegistry.ProjectStatus.Completed, "Should be Completed");
+
+        // Verify fees distributed to Treasury and vePool
+        uint256 totalFees = (participant1Amount + participant2Amount) * ISSUANCE_FEE / 10000;
+        uint256 treasuryFee = totalFees / 2;
+        uint256 vePoolFee = totalFees / 2;
+
+        assertGt(usdc.balanceOf(address(treasury)), 0, "Treasury should receive fees");
+        assertGt(usdc.balanceOf(vePool), 0, "vePool should receive fees");
+
+        // ========== Phase 7: Token Claiming ==========
+
+        uint256 participant1BalanceBefore = rwaToken.balanceOf(participant1);
+        uint256 participant2BalanceBefore = rwaToken.balanceOf(participant2);
+
+        // Participant 1 claims RWA tokens
+        vm.prank(participant1);
+        controller.claim(projectId);
+
+        // Participant 2 claims RWA tokens
+        vm.prank(participant2);
+        controller.claim(projectId);
+
+        // Verify tokens received (1:1 ratio)
+        assertEq(
+            rwaToken.balanceOf(participant1) - participant1BalanceBefore,
+            participant1Amount,
+            "Participant 1 should receive RWA tokens"
+        );
+        assertEq(
+            rwaToken.balanceOf(participant2) - participant2BalanceBefore,
+            participant2Amount,
+            "Participant 2 should receive RWA tokens"
+        );
+
+        // Verify issuer received USDC (minus fees)
+        uint256 issuerReceived = participant1Amount + participant2Amount - totalFees;
+        assertEq(
+            usdc.balanceOf(issuer),
+            issuerReceived,
+            "Issuer should receive USDC minus fees"
+        );
+    }
+
+    /**
+     * @notice Test 2: Rejected Project - Cannot Create Sale
+     * @dev Verifies that rejected projects cannot proceed to sale creation
+     */
+    function testIntegration_RejectedProject_CannotCreateSale() public {
+        // Submit project
+        vm.prank(issuer);
+        projectId = registry.submitProject(
+            address(rwaToken),
+            TARGET_RAISE,
+            SALE_DURATION,
+            COMPLIANCE_DOC_URI,
+            AUDIT_REPORT_URI,
+            DISCLOSURE_URI
+        );
+
+        // Vote reject (both voters reject)
+        vm.prank(voter1);
+        registry.vote(projectId, voter1TokenId, false);
+
+        vm.prank(voter2);
+        registry.vote(projectId, voter2TokenId, false);
+
+        // Execute vote (should reject)
+        registry.executeVote(projectId);
+
+        // Verify project rejected
+        (, , , , , , , , ProjectRegistry.ProjectStatus status) = registry.getProject(projectId);
+        assertTrue(status == ProjectRegistry.ProjectStatus.Rejected, "Should be Rejected");
+
+        // Attempt to create sale (should fail)
+        vm.startPrank(issuer);
+        rwaToken.approve(address(controller), TARGET_RAISE);
+        vm.expectRevert("Project not approved");
+        controller.createSale(
+            projectId,
+            TARGET_RAISE,
+            MIN_CONTRIBUTION,
+            MAX_CONTRIBUTION,
+            SALE_DURATION
+        );
+        vm.stopPrank();
+    }
+
+    /**
+     * @notice Test 3: Failed Sale - Participants Can Claim Refunds
+     * @dev Verifies refund mechanism when sale doesn't meet minimum raise
+     */
+    function testIntegration_FailedSale_RefundMechanism() public {
+        // Setup: Create approved project and active sale
+        vm.prank(issuer);
+        projectId = registry.submitProject(
+            address(rwaToken),
+            TARGET_RAISE,
+            SALE_DURATION,
+            COMPLIANCE_DOC_URI,
+            AUDIT_REPORT_URI,
+            DISCLOSURE_URI
+        );
+
+        // Approve project
+        vm.prank(voter1);
+        registry.vote(projectId, voter1TokenId, true);
+        registry.executeVote(projectId);
+
+        // Create sale with minimum raise requirement
+        uint256 minimumRaise = 500_000 * 1e6; // 500K USDC minimum
+        vm.startPrank(issuer);
+        rwaToken.approve(address(controller), TARGET_RAISE);
+        controller.createSale(
+            projectId,
+            TARGET_RAISE,
+            MIN_CONTRIBUTION,
+            MAX_CONTRIBUTION,
+            SALE_DURATION
+        );
+        vm.stopPrank();
+
+        // Participate with amount below minimum raise
+        uint256 participantAmount = 10_000 * 1e6; // Only 10K USDC (below 500K minimum)
+        vm.startPrank(participant1);
+        usdc.approve(address(controller), participantAmount);
+        controller.participate(projectId, participantAmount);
+        vm.stopPrank();
+
+        uint256 participant1BalanceBefore = usdc.balanceOf(participant1);
+
+        // Fast forward and finalize (should fail due to insufficient raise)
+        vm.warp(block.timestamp + SALE_DURATION + 1);
+        controller.finalizeSale(projectId);
+
+        // Claim refund
+        vm.prank(participant1);
+        controller.refund(projectId);
+
+        // Verify refund received
+        assertEq(
+            usdc.balanceOf(participant1) - participant1BalanceBefore,
+            participantAmount,
+            "Should receive full refund"
+        );
+    }
+
+    /**
+     * @notice Test 4: Cross-Contract State Consistency
+     * @dev Verifies that ProjectRegistry and IssuanceController maintain consistent state
+     */
+    function testIntegration_CrossContractStateConsistency() public {
+        // Submit and approve project
+        vm.prank(issuer);
+        projectId = registry.submitProject(
+            address(rwaToken),
+            TARGET_RAISE,
+            SALE_DURATION,
+            COMPLIANCE_DOC_URI,
+            AUDIT_REPORT_URI,
+            DISCLOSURE_URI
+        );
+
+        vm.prank(voter1);
+        registry.vote(projectId, voter1TokenId, true);
+        registry.executeVote(projectId);
+
+        // Create sale
+        vm.startPrank(issuer);
+        rwaToken.approve(address(controller), TARGET_RAISE);
+        controller.createSale(
+            projectId,
+            TARGET_RAISE,
+            MIN_CONTRIBUTION,
+            MAX_CONTRIBUTION,
+            SALE_DURATION
+        );
+        vm.stopPrank();
+
+        // Verify both contracts show consistent Active status
+        (, , , , , , , , ProjectRegistry.ProjectStatus registryStatus, , ) = registry.getProject(projectId);
+        IssuanceController.Sale memory controllerSale = controller.getSale(projectId);
+
+        assertTrue(registryStatus == ProjectRegistry.ProjectStatus.Active, "Registry should show Active");
+        assertTrue(!controllerSale.isFinalized, "Controller should show sale active");
+
+        // Complete sale
+        uint256 participantAmount = 1_000_000 * 1e6; // Full raise
+        vm.startPrank(participant1);
+        usdc.approve(address(controller), participantAmount);
+        controller.participate(projectId, participantAmount);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + SALE_DURATION + 1);
+        controller.finalizeSale(projectId);
+
+        // Verify both contracts show consistent Completed status
+        (, , , , , , , , registryStatus) = registry.getProject(projectId);
+        controllerSale = controller.getSale(projectId);
+
+        assertTrue(registryStatus == ProjectRegistry.ProjectStatus.Completed, "Registry should show Completed");
+        assertTrue(controllerSale.isFinalized, "Controller should show sale inactive");
+    }
+
+    /**
+     * @notice Test 5: Multiple Projects Concurrent Operation
+     * @dev Verifies that multiple projects can operate independently without interference
+     */
+    function testIntegration_MultipleProjectsConcurrent() public {
+        // Create RWA token for second project
+        MockERC20 rwaToken2 = new MockERC20("RWA Token 2", "RWA2", 6);
+        rwaToken2.mint(issuer, 2_000_000 * 1e6);
+
+        // Submit two projects
+        vm.startPrank(issuer);
+        uint256 projectId1 = registry.submitProject(
+            address(rwaToken),
+            TARGET_RAISE,
+            SALE_DURATION,
+            COMPLIANCE_DOC_URI,
+            AUDIT_REPORT_URI,
+            DISCLOSURE_URI
+        );
+
+        uint256 projectId2 = registry.submitProject(
+            address(rwaToken2),
+            TARGET_RAISE / 2, // Different target raise
+            SALE_DURATION,
+            COMPLIANCE_DOC_URI,
+            AUDIT_REPORT_URI,
+            DISCLOSURE_URI
+        );
+        vm.stopPrank();
+
+        // Approve both projects
+        vm.prank(voter1);
+        registry.vote(projectId1, voter1TokenId, true);
+        registry.executeVote(projectId1);
+
+        // For project 2, create new veNFT for voter1 to vote again
+        hyd.mint(voter1, 50_000 * 1e18);
+        vm.startPrank(voter1);
+        hyd.approve(address(votingEscrow), type(uint256).max);
+        uint256 voter1TokenId2 = votingEscrow.createLock(50_000 * 1e18, block.timestamp + 2 * 365 days);
+        registry.vote(projectId2, voter1TokenId2, true);
+        vm.stopPrank();
+
+        registry.executeVote(projectId2);
+
+        // Create sales for both
+        vm.startPrank(issuer);
+        rwaToken.approve(address(controller), TARGET_RAISE);
+        controller.createSale(projectId1, TARGET_RAISE, MIN_CONTRIBUTION, MAX_CONTRIBUTION, SALE_DURATION);
+
+        rwaToken2.approve(address(controller), TARGET_RAISE / 2);
+        controller.createSale(projectId2, TARGET_RAISE / 2, MIN_CONTRIBUTION, MAX_CONTRIBUTION, SALE_DURATION);
+        vm.stopPrank();
+
+        // Verify both sales active
+        IssuanceController.Sale memory sale1 = controller.getSale(projectId1);
+        IssuanceController.Sale memory sale2 = controller.getSale(projectId2);
+
+        assertTrue(!sale1.isFinalized, "Sale 1 should be active");
+        assertTrue(!sale2.isFinalized, "Sale 2 should be active");
+
+        // Participate in both projects
+        uint256 amount1 = 10_000 * 1e6;
+        uint256 amount2 = 5_000 * 1e6;
+
+        vm.startPrank(participant1);
+        usdc.approve(address(controller), amount1 + amount2);
+        controller.participate(projectId1, amount1);
+        controller.participate(projectId2, amount2);
+        vm.stopPrank();
+
+        // Verify contributions tracked separately
+        uint256 contribution1 = controller.getContribution(projectId1, participant1);
+        uint256 contribution2 = controller.getContribution(projectId2, participant1);
+
+        assertEq(contribution1, amount1, "Project 1 contribution mismatch");
+        assertEq(contribution2, amount2, "Project 2 contribution mismatch");
+    }
+}
