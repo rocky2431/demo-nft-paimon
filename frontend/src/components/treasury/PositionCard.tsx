@@ -223,12 +223,12 @@ export function PositionCard({ position, onRedeem, onAddCollateral }: PositionCa
               onClick={handleAddCollateralClick}
               startIcon={<AddCircleOutlineIcon />}
               sx={{
-                borderColor: TREASURY_THEME.SECONDARY,
-                color: TREASURY_THEME.SECONDARY,
+                borderColor: TREASURY_THEME.EMPHASIS,
+                color: TREASURY_THEME.EMPHASIS,
                 fontWeight: 700,
                 '&:hover': {
-                  borderColor: TREASURY_THEME.PRIMARY,
-                  backgroundColor: `${TREASURY_THEME.PRIMARY}10`,
+                  borderColor: TREASURY_THEME.EMPHASIS,
+                  backgroundColor: `${TREASURY_THEME.EMPHASIS}10`,
                 },
               }}
             >

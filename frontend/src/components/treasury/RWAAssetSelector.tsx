@@ -34,13 +34,13 @@ export function RWAAssetSelector({ selectedAsset, onSelectAsset }: RWAAssetSelec
         sx={{
           backgroundColor: 'background.paper',
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#FFD700',
+            borderColor: TREASURY_THEME.EMPHASIS, // #FF8C00 deep orange
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#FF8C00',
+            borderColor: TREASURY_THEME.EMPHASIS,
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#FFD700',
+            borderColor: TREASURY_THEME.EMPHASIS,
           },
         }}
       >

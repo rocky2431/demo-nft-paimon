@@ -184,12 +184,12 @@ export function PositionList() {
             disabled={isRefreshing}
             onClick={handleRefresh}
             sx={{
-              borderColor: TREASURY_THEME.SECONDARY,
-              color: TREASURY_THEME.SECONDARY,
+              borderColor: TREASURY_THEME.EMPHASIS,
+              color: TREASURY_THEME.EMPHASIS,
               fontWeight: 600,
               '&:hover': {
-                borderColor: TREASURY_THEME.PRIMARY,
-                backgroundColor: `${TREASURY_THEME.PRIMARY}10`,
+                borderColor: TREASURY_THEME.EMPHASIS,
+                backgroundColor: `${TREASURY_THEME.EMPHASIS}10`,
               },
             }}
           >
@@ -200,12 +200,12 @@ export function PositionList() {
             startIcon={<DownloadIcon />}
             onClick={handleExportCSV}
             sx={{
-              borderColor: TREASURY_THEME.SECONDARY,
-              color: TREASURY_THEME.SECONDARY,
+              borderColor: TREASURY_THEME.EMPHASIS,
+              color: TREASURY_THEME.EMPHASIS,
               fontWeight: 600,
               '&:hover': {
-                borderColor: TREASURY_THEME.PRIMARY,
-                backgroundColor: `${TREASURY_THEME.PRIMARY}10`,
+                borderColor: TREASURY_THEME.EMPHASIS,
+                backgroundColor: `${TREASURY_THEME.EMPHASIS}10`,
               },
             }}
           >

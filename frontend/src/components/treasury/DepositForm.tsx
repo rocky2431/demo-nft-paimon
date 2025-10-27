@@ -193,13 +193,13 @@ export function DepositForm() {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         '& fieldset': {
-                          borderColor: TREASURY_THEME.PRIMARY,
+                          borderColor: TREASURY_THEME.EMPHASIS, // #FF8C00 deep orange
                         },
                         '&:hover fieldset': {
-                          borderColor: TREASURY_THEME.SECONDARY,
+                          borderColor: TREASURY_THEME.EMPHASIS,
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: TREASURY_THEME.PRIMARY,
+                          borderColor: TREASURY_THEME.EMPHASIS,
                         },
                       },
                     }}
