@@ -12,6 +12,7 @@ import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SavingsIcon from '@mui/icons-material/Savings';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 
 export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale' | 'treasury';
 
@@ -224,6 +225,23 @@ export function Navigation({ activePage }: NavigationProps) {
                 <SavingsIcon sx={{ mr: 1.5, color: '#FFD700' }} />
                 <Typography variant="body2" fontWeight={600}>
                   Deposit RWA
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                href="/treasury/positions"
+                onClick={handleTreasuryClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+                  },
+                }}
+              >
+                <MonitorHeartIcon sx={{ mr: 1.5, color: '#FFD700' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  My Positions
                 </Typography>
               </MenuItem>
             </Menu>

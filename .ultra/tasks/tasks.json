@@ -2183,7 +2183,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "in_progress",
       "tags": [
         "frontend",
         "treasury",
@@ -2206,7 +2206,8 @@
         "Export position report (CSV)"
       ],
       "technical_notes": "Route: /treasury/positions. Components: PositionList.tsx, PositionCard.tsx, HealthFactorGauge.tsx. Use wagmi useReadContract(Treasury.positions) + useBlockNumber for auto-refresh. Health factor colors: Green (#8BC34A), Yellow (#FFB74D), Red (#FF6B35). Implement useInterval(refetch, 60000) for auto-refresh. CSV export using papaparse library.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-011"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-011",
+      "started_at": "2025-10-27"
     },
     {
       "id": "RWA-012",
