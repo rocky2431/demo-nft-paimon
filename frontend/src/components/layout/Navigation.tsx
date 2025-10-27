@@ -8,6 +8,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import CasinoIcon from '@mui/icons-material/Casino';
 import LocalActivityIcon from '@mui/icons-material/LocalActivity';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 
 export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale';
 
@@ -243,6 +244,23 @@ export function Navigation({ activePage }: NavigationProps) {
                 <EmojiEventsIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                 <Typography variant="body2" fontWeight={600}>
                   Social Tasks
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                href="/presale/leaderboards"
+                onClick={handlePresaleClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <LeaderboardIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Leaderboards
                 </Typography>
               </MenuItem>
             </Menu>
