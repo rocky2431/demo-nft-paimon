@@ -2,7 +2,7 @@
 
 **Project**: Paimon.dex
 **Version**: 0.1.0 (HYD v1)
-**Last Updated**: 2025-10-24
+**Last Updated**: 2025-10-27
 
 ---
 
@@ -540,7 +540,13 @@ function fulfillRedemption(address user, uint256 amount) external whenNotPaused 
 /governance/proposals      → Active & historical proposals
 /governance/bribes         → Bribe marketplace
 /analytics                 → Protocol metrics, TVL, volume charts
-/nft-presale               → RWA NFT presale (Phase 1)
+/presale                   → RWA Bond NFT Presale (Phase 3.5)
+/presale/mint              → NFT minting interface (5,000 @ 100 USDC)
+/presale/dice              → Dice rolling (Chainlink VRF + Remint)
+/presale/tasks             → Social tasks (Twitter/Discord/Referrals)
+/presale/leaderboards      → Competitive rankings (Top Rollers/Lucky/Social)
+/presale/bonds             → Bond portfolio dashboard
+/presale/settle/:tokenId   → Settlement UI (veNFT vs Cash)
 ```
 
 ### 3.3 Component Hierarchy
@@ -568,10 +574,18 @@ App
 │   │   ├── LockInterface (Create veNFT, increase lock)
 │   │   ├── VotingDashboard (Active proposals, voting power)
 │   │   └── FeeClaimInterface (Claim trading fees + bribes)
-│   └── Analytics
-│       ├── TVLChart (Historical TVL by component)
-│       ├── VolumeChart (Daily/weekly trading volume)
-│       └── RevenueBreakdown (Protocol fees by source)
+│   ├── Analytics
+│   │   ├── TVLChart (Historical TVL by component)
+│   │   ├── VolumeChart (Daily/weekly trading volume)
+│   │   └── RevenueBreakdown (Protocol fees by source)
+│   └── Presale (RWA Bond NFT)
+│       ├── NFTMinter (100 USDC mint, quantity selector, NFT display)
+│       ├── DiceRoller (3D dice animation, VRF integration, cooldown timer)
+│       ├── SocialTasksDashboard (Twitter/Discord tasks, referral system)
+│       ├── LeaderboardsPage (Top Rollers, Lucky Players, Social Champions)
+│       ├── BondDashboard (Portfolio view, maturity countdown, rarity display)
+│       ├── SettlementPage (veNFT vs Cash comparison, lock duration selector)
+│       └── BondDogeAvatar (Mascot with 10 expressions, animated transitions)
 └── Shared Components
     ├── ConnectButton (WalletConnect integration)
     ├── TransactionModal (Pending/success/error states)
@@ -610,6 +624,162 @@ const theme = createTheme({
   },
 });
 ```
+
+### 3.5 Presale UI Technical Details
+
+#### 3.5.1 Settlement UI Architecture
+
+**Dual-Option Comparison System**:
+```typescript
+// Settlement options with dynamic calculations
+interface SettlementData {
+  bond: BondData;
+  veNFTOption: VeNFTSettlementOption;  // Lock + Vote option
+  cashOption: CashSettlementOption;     // Instant USDC redemption
+}
+
+// veNFT option with interactive lock duration
+interface VeNFTSettlementOption {
+  lockDurationDays: number;          // 90-1460 days (3-48 months)
+  lockDurationMonths: number;        // Slider input (3-48)
+  hydAmount: number;                 // 1:1 USDC→HYD conversion
+  votingPower: number;               // hydAmount × (duration / 1460)
+  estimatedAPY: number;              // 5-20% based on lock duration
+  lockEndDate: Date;                 // Calculated end date
+  ongoingRewards: true;              // Protocol fees + bribes
+  liquidity: 'Locked';
+  riskLevel: 'Low' | 'Medium';       // Medium if >2 years
+}
+
+// Cash option with amount breakdown
+interface CashSettlementOption {
+  principal: number;                 // 100 USDC
+  baseYield: number;                // 0.5 USDC (90-day interest)
+  remintYield: number;              // Accumulated from dice rolls
+  totalAmount: number;              // Sum of all 3
+  ongoingRewards: false;
+  liquidity: 'Liquid';              // Instant withdrawal
+  riskLevel: 'Low';
+}
+```
+
+**UI Components**:
+1. **VeNFTOption.tsx** (278 lines)
+   - Lock duration slider (Material UI Slider, 3-48 months)
+   - Preset duration buttons (3m, 6m, 1y, 2y, 3y, 4y)
+   - Real-time voting power calculation display
+   - Dynamic APY estimation (5% base + 15% max bonus)
+   - Lock end date preview
+   - Benefits list with protocol fee explanation
+
+2. **CashOption.tsx** (220 lines)
+   - USDC amount breakdown (principal + baseYield + remintYield)
+   - Visual breakdown with Material UI icons
+   - "Instant" liquidity badge
+   - Benefits: No lock, low risk, full flexibility
+
+3. **OptionComparisonTable.tsx** (183 lines)
+   - 7 comparison metrics in 3-column table:
+     - Amount Received (HYD vs USDC)
+     - Lock Period (X months vs No lock)
+     - Voting Power (calculated vs 0)
+     - Estimated APY (5-20% vs 0%)
+     - Ongoing Rewards (Yes vs No)
+     - Liquidity (Locked vs Liquid)
+     - Risk Level (Low/Medium vs Low)
+   - veNFT advantages highlighted with "Better" chip
+
+4. **ConfirmationModal.tsx** (229 lines)
+   - Selected option preview
+   - Lock duration confirmation (veNFT only)
+   - Irreversibility warning
+   - Transaction status tracking (idle → confirming → pending → success/error)
+   - Success state: veNFT token ID or USDC TX hash
+
+**Calculation Formulas**:
+```typescript
+// Voting Power (Curve Finance veToken model)
+votingPower = hydAmount × (lockDurationDays / MAX_LOCK_DURATION_DAYS)
+
+// Estimated APY
+estimatedAPY = baseAPY (5%) + bonusAPY (15%) × (lockDurationDays / 1460)
+
+// Example: 100.5 HYD locked for 2 years (730 days)
+votingPower = 100.5 × (730 / 1460) = 50.25
+estimatedAPY = 5% + (15% × 0.5) = 12.5%
+```
+
+#### 3.5.2 Bond Doge Mascot System
+
+**Character Design**:
+- **Species**: Shiba Inu (柴犬) in business suit
+- **Purpose**: Viral marketing, user engagement, meme potential
+- **File Format**: SVG (scalable vector graphics)
+- **Location**: `/public/images/bond-doge/{expression}.svg`
+
+**10 Expressions & Use Cases**:
+```typescript
+enum BondDogeExpression {
+  HAPPY = 'happy',           // High dice roll (result > 10 Gold, = 6 Normal)
+  SAD = 'sad',               // Low dice roll (result < 3)
+  SHOCKED = 'shocked',       // Natural 20 on Diamond Dice (jackpot)
+  NEUTRAL = 'neutral',       // Default state, waiting
+  THINKING = 'thinking',     // Settlement decision page
+  RICH = 'rich',            // Legendary rarity (≥8 USDC Remint)
+  CELEBRATING = 'celebrating', // Successful settlement
+  WAVING = 'waving',        // Referral system invitation
+  SLEEPING = 'sleeping',     // Bond not yet matured
+  DANCING = 'dancing',       // Leaderboard top 3 position
+}
+```
+
+**Dynamic Expression Logic**:
+```typescript
+// Dice roll expression
+function getBondDogeExpressionForDiceRoll(
+  result: number,
+  diceType: 'normal' | 'gold' | 'diamond'
+): BondDogeExpression {
+  if (diceType === 'diamond' && result === 20) return BondDogeExpression.SHOCKED;
+  if (result > 10 && diceType === 'gold') return BondDogeExpression.HAPPY;
+  if (result === 6 && diceType === 'normal') return BondDogeExpression.HAPPY;
+  if (result < 3) return BondDogeExpression.SAD;
+  return BondDogeExpression.NEUTRAL;
+}
+
+// Rarity-based expression
+function getBondDogeExpressionForRarity(rarityTier: RarityTier): BondDogeExpression {
+  if (rarityTier === RarityTier.LEGENDARY) return BondDogeExpression.RICH;
+  if (rarityTier === RarityTier.DIAMOND || rarityTier === RarityTier.GOLD) {
+    return BondDogeExpression.HAPPY;
+  }
+  return BondDogeExpression.NEUTRAL;
+}
+```
+
+**BondDogeAvatar Component** (92 lines):
+```typescript
+interface BondDogeAvatarProps {
+  expression: BondDogeExpression;
+  size?: number;              // Width/height in pixels (default: 150)
+  showLabel?: boolean;        // Show expression name below (default: false)
+  animate?: boolean;          // Bounce-in animation (default: false)
+}
+
+// Usage
+<BondDogeAvatar
+  expression={BondDogeExpression.CELEBRATING}
+  size={200}
+  showLabel={true}
+  animate={true}
+/>
+```
+
+**Design Specifications** (for designer):
+- Canvas size: 1000×1000px (1:1 ratio)
+- File size: <500KB per SVG
+- Color palette: Warm Material Design 3 tones
+- Full spec: `.ultra/docs/design/BOND-DOGE-MASCOT-SPEC.md`
 
 ---
 
