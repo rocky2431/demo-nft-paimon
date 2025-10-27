@@ -96,6 +96,9 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice User positions: user => asset => position
     mapping(address => mapping(address => RWAPosition)) public userPositions;
 
+    /// @notice User assets list: user => asset addresses
+    mapping(address => address[]) private userAssets;
+
     // ==================== Events ====================
 
     /// @notice Emitted when DEX fees are claimed
@@ -396,6 +399,8 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
                 hydMinted: hydToMint,
                 depositTime: block.timestamp
             });
+            // Add asset to user's asset list
+            userAssets[msg.sender].push(asset);
         } else {
             // Add to existing position
             position.rwaAmount += amount;
@@ -457,6 +462,8 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         // Clean up if position is fully redeemed
         if (position.rwaAmount == 0) {
             delete userPositions[msg.sender][asset];
+            // Remove asset from user's asset list
+            _removeAssetFromUserList(msg.sender, asset);
         }
 
         emit RWARedeemed(msg.sender, asset, amountAfterFee, hydToBurn, fee);
@@ -488,6 +495,128 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
             position.hydMinted,
             position.depositTime
         );
+    }
+
+    // ==================== RWA-008 Stage 2: Health Factor Monitoring ====================
+
+    /**
+     * @notice Get all user positions across all assets
+     * @param user User address
+     * @return assets Array of asset addresses
+     * @return amounts Array of RWA amounts
+     * @return debts Array of HYD debt amounts
+     */
+    function getAllUserPositions(address user)
+        external
+        view
+        returns (
+            address[] memory assets,
+            uint256[] memory amounts,
+            uint256[] memory debts
+        )
+    {
+        address[] memory userAssetList = userAssets[user];
+        uint256 count = userAssetList.length;
+
+        assets = new address[](count);
+        amounts = new uint256[](count);
+        debts = new uint256[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            address asset = userAssetList[i];
+            RWAPosition memory position = userPositions[user][asset];
+            assets[i] = asset;
+            amounts[i] = position.rwaAmount;
+            debts[i] = position.hydMinted;
+        }
+
+        return (assets, amounts, debts);
+    }
+
+    /**
+     * @notice Get total collateral value for user in USD (18 decimals)
+     * @param user User address
+     * @return totalValue Total collateral value in USD
+     */
+    function getTotalCollateralValue(address user) public view returns (uint256 totalValue) {
+        address[] memory userAssetList = userAssets[user];
+
+        for (uint256 i = 0; i < userAssetList.length; i++) {
+            address asset = userAssetList[i];
+            RWAPosition memory position = userPositions[user][asset];
+
+            if (position.rwaAmount > 0) {
+                RWATier memory tier = rwaAssets[asset];
+                IRWAPriceOracle oracle = IRWAPriceOracle(tier.oracle);
+                uint256 price = oracle.getPrice();
+                totalValue += (position.rwaAmount * price) / 1e18;
+            }
+        }
+
+        return totalValue;
+    }
+
+    /**
+     * @notice Get total debt value for user in USD (18 decimals)
+     * @param user User address
+     * @return totalDebt Total HYD debt
+     */
+    function getTotalDebtValue(address user) public view returns (uint256 totalDebt) {
+        address[] memory userAssetList = userAssets[user];
+
+        for (uint256 i = 0; i < userAssetList.length; i++) {
+            address asset = userAssetList[i];
+            RWAPosition memory position = userPositions[user][asset];
+            totalDebt += position.hydMinted;
+        }
+
+        return totalDebt;
+    }
+
+    /**
+     * @notice Get health factor for user (percentage)
+     * @dev Health Factor = (Total Collateral Value / Total Debt Value) * 100
+     *      - >150%: Healthy
+     *      - 100-150%: Warning
+     *      - <100%: Danger (liquidatable)
+     * @param user User address
+     * @return healthFactor Health factor as percentage (e.g., 125 = 125%)
+     */
+    function getHealthFactor(address user) external view returns (uint256 healthFactor) {
+        uint256 totalDebt = getTotalDebtValue(user);
+
+        // No debt = maximum health factor
+        if (totalDebt == 0) {
+            return type(uint256).max;
+        }
+
+        uint256 totalCollateral = getTotalCollateralValue(user);
+
+        // Calculate health factor: (collateral / debt) * 100
+        healthFactor = (totalCollateral * 100) / totalDebt;
+
+        return healthFactor;
+    }
+
+    /**
+     * @notice Remove asset from user's asset list
+     * @param user User address
+     * @param asset Asset address to remove
+     * @dev Uses swap-and-pop for gas efficiency
+     */
+    function _removeAssetFromUserList(address user, address asset) private {
+        address[] storage assets = userAssets[user];
+        uint256 length = assets.length;
+
+        // Find and remove the asset
+        for (uint256 i = 0; i < length; i++) {
+            if (assets[i] == asset) {
+                // Swap with last element and pop
+                assets[i] = assets[length - 1];
+                assets.pop();
+                break;
+            }
+        }
     }
 
     // ==================== PRESALE-008: Bond NFT Settlement Integration ====================

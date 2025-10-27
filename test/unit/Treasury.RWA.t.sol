@@ -110,6 +110,7 @@ contract TreasuryRWATest is Test {
 
     // Fund user with RWA tokens
     rwaToken.mint(user, 1000 * 10**18);
+    rwaToken2.mint(user, 1000 * 10**18);
 
     // Fund Treasury with USDC for redemptions
     usdc.mint(address(treasury), 1_000_000 * 10**6);
@@ -518,7 +519,9 @@ contract TreasuryRWATest is Test {
     assertEq(healthFactorBefore, 125);
 
     // Simulate price drop: $1000 → $800 (-20%)
-    vm.prank(owner);
+    // Update both Chainlink and NAV to avoid circuit breaker
+    ethUsdFeed.updateAnswer(int256(800 * 10**18 / 10**10)); // 8 decimals
+    vm.prank(trustedOracle);
     oracle.updateNAV(800 * 10**18);
 
     // New HF = ($8,000 / $8,000) * 100 = 100%
@@ -576,7 +579,9 @@ contract TreasuryRWATest is Test {
     vm.stopPrank();
 
     // Simulate severe price drop: $1000 → $700 (-30%)
-    vm.prank(owner);
+    // Update both Chainlink and NAV to avoid circuit breaker
+    ethUsdFeed.updateAnswer(int256(700 * 10**18 / 10**10)); // 8 decimals
+    vm.prank(trustedOracle);
     oracle.updateNAV(700 * 10**18);
 
     // New HF = ($7,000 / $8,000) * 100 = 87.5%
