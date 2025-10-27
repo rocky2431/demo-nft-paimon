@@ -383,7 +383,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "testing",
         "treasury",
@@ -407,7 +407,8 @@
         "Oracle failure handling tested"
       ],
       "technical_notes": "Test files: test/treasury/Treasury.RWA.test.ts (unit), test/integration/Treasury-RWA.integration.test.ts, test/e2e/treasury-deposit-flow.spec.ts (Playwright). Oracle failure simulation: mock Chainlink feed with stale data (>24h), verify fallback to NAV only. Gas benchmarks: depositRWA(), redeemRWA(), liquidate().",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-012"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-012",
+      "completed_date": "2025-10-27"
     }
   ]
 }
