@@ -53,8 +53,8 @@ contract TreasuryLiquidationTest is Test {
   // ============================================================
 
   // Liquidation constants (from RWA-009 spec)
-  uint256 public constant LIQUIDATION_THRESHOLD = 11500; // 115%
-  uint256 public constant TARGET_HEALTH_FACTOR = 12500; // 125%
+  uint256 public constant LIQUIDATION_THRESHOLD = 115; // 115%
+  uint256 public constant TARGET_HEALTH_FACTOR = 125; // 125%
   uint256 public constant LIQUIDATION_PENALTY = 500; // 5%
   uint256 public constant LIQUIDATOR_SHARE = 400; // 4%
   uint256 public constant PROTOCOL_SHARE = 100; // 1%
@@ -171,12 +171,12 @@ contract TreasuryLiquidationTest is Test {
    * @notice Test: Liquidate undercollateralized position (HF < 115%)
    */
   function test_Liquidate_Undercollateralized_Success() public {
-    // Create position with HF = 100% (undercollateralized)
-    (uint256 rwaAmount, uint256 hydDebt) = _createUndercollateralizedPosition(10000);
+    // Create position with HF = 80% (undercollateralized with buffer for penalty)
+    (uint256 rwaAmount, uint256 hydDebt) = _createUndercollateralizedPosition(80);
 
     // Verify position is liquidatable
     uint256 healthFactorBefore = treasury.getHealthFactor(user);
-    assertEq(healthFactorBefore, 100);
+    assertEq(healthFactorBefore, 80);
     assertTrue(healthFactorBefore < LIQUIDATION_THRESHOLD);
 
     // Liquidator repays debt and seizes collateral
@@ -203,7 +203,7 @@ contract TreasuryLiquidationTest is Test {
    */
   function test_PartialLiquidation_RestoresTo125_Success() public {
     // Create position with HF = 110% (liquidatable but not fully)
-    (, uint256 hydDebt) = _createUndercollateralizedPosition(11000);
+    (, uint256 hydDebt) = _createUndercollateralizedPosition(110);
 
     // Calculate partial liquidation amount to restore to 125%
     // This should be calculated by the contract
@@ -223,7 +223,7 @@ contract TreasuryLiquidationTest is Test {
    * @notice Test: Liquidator receives 4% penalty
    */
   function test_LiquidatorReceives4PercentPenalty() public {
-    (, uint256 hydDebt) = _createUndercollateralizedPosition(10000);
+    (, uint256 hydDebt) = _createUndercollateralizedPosition(80);
 
     uint256 liquidatorBalanceBefore = rwaToken.balanceOf(liquidator);
 
@@ -244,7 +244,7 @@ contract TreasuryLiquidationTest is Test {
    * @notice Test: Protocol receives 1% penalty
    */
   function test_ProtocolReceives1PercentPenalty() public {
-    (, uint256 hydDebt) = _createUndercollateralizedPosition(10000);
+    (, uint256 hydDebt) = _createUndercollateralizedPosition(80);
 
     uint256 protocolBalanceBefore = rwaToken.balanceOf(address(treasury));
 
@@ -268,7 +268,7 @@ contract TreasuryLiquidationTest is Test {
    */
   function test_LiquidateAt115Threshold_Success() public {
     // Create position with HF = exactly 115%
-    _createUndercollateralizedPosition(11500);
+    _createUndercollateralizedPosition(115);
 
     uint256 healthFactor = treasury.getHealthFactor(user);
     assertEq(healthFactor, 115);
@@ -360,7 +360,7 @@ contract TreasuryLiquidationTest is Test {
    * @notice Test: Liquidation gas usage <300K
    */
   function test_LiquidationGasUsage() public {
-    (, uint256 hydDebt) = _createUndercollateralizedPosition(10000);
+    (, uint256 hydDebt) = _createUndercollateralizedPosition(100);
 
     vm.startPrank(liquidator);
     hydToken.approve(address(treasury), hydDebt);
@@ -392,7 +392,7 @@ contract TreasuryLiquidationTest is Test {
    * @notice Test: Liquidation respects pause mechanism
    */
   function test_LiquidationWhenPaused_Reverts() public {
-    (, uint256 hydDebt) = _createUndercollateralizedPosition(10000);
+    (, uint256 hydDebt) = _createUndercollateralizedPosition(100);
 
     // Pause Treasury
     vm.prank(owner);
@@ -415,7 +415,7 @@ contract TreasuryLiquidationTest is Test {
    */
   function test_IsLiquidatable_ViewFunction() public {
     // Create undercollateralized position
-    _createUndercollateralizedPosition(10000);
+    _createUndercollateralizedPosition(100);
 
     // Check if liquidatable (public view)
     bool liquidatable = treasury.isLiquidatable(user, address(rwaToken));
@@ -440,7 +440,7 @@ contract TreasuryLiquidationTest is Test {
    * @notice Test: getLiquidationInfo() query function
    */
   function test_GetLiquidationInfo_QueryFunction() public {
-    _createUndercollateralizedPosition(10000);
+    _createUndercollateralizedPosition(100);
 
     // Get liquidation info
     (
