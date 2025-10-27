@@ -2042,7 +2042,7 @@
       ],
       "technical_notes": "Treasury.sol enhancement. Struct RWATier { uint8 tier; uint256 ltvRatio; uint256 mintDiscount; }. depositRWA() transfers RWA token to Treasury, calls RWAPriceOracle.getPrice(), calculates HYD amount, mints to user. redeemRWA() requires cooldown elapsed, burns HYD, transfers RWA back (minus 0.5% fee). Position struct: { address rwaAsset; uint256 rwaAmount; uint256 hydMinted; uint256 depositTime; }.",
       "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-008",
-      "implementation_status": "stage-1-completed",
+      "implementation_status": "stage-2-completed",
       "implementation_stages": [
         {
           "stage": 1,
@@ -2066,13 +2066,22 @@
           "stage": 2,
           "name": "Health Factor & Monitoring",
           "estimated_days": 1,
-          "status": "pending",
+          "actual_days": 0.5,
+          "status": "completed",
+          "completed_at": "2025-10-27",
+          "test_coverage": "96%",
+          "tests_passed": "24/25",
           "features": [
-            "getHealthFactor() implementation",
-            "Position query functions",
-            "Multi-asset support tests",
-            "Boundary condition tests"
-          ]
+            "getHealthFactor() implementation (formula: (totalCollateral / totalDebt) * 100)",
+            "getAllUserPositions() query function",
+            "getTotalCollateralValue() and getTotalDebtValue()",
+            "userAssets tracking array for multi-asset support",
+            "_removeAssetFromUserList() helper (swap-and-pop)",
+            "Multi-asset aggregation tests",
+            "Price change impact tests",
+            "Health zone boundary tests (>150%, 100-150%, <100%)"
+          ],
+          "notes": "TDD RED-GREEN-REFACTOR cycle. 24/25 tests passing (96%). Only gas optimization test deferred to Stage 3. Health factor returns type(uint256).max for users with no debt. Circuit breaker tests validate Oracle safety mechanisms."
         },
         {
           "stage": 3,
