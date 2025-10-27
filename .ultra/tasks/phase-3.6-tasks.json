@@ -8,7 +8,7 @@
       "priority": "P0",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "launchpad",
@@ -27,7 +27,8 @@
         "Gas optimization: <200K gas per submission"
       ],
       "technical_notes": "ProjectRegistry.sol: struct Project with compliance doc links. veNFT governance integration via VotingEscrow.votingPower(). Voting threshold calculation: totalApproveVotes / totalVotingPower > 0.5.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-001"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-001",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-002",
@@ -37,7 +38,7 @@
       "priority": "P0",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "launchpad",
@@ -58,7 +59,8 @@
         "Integration tests with ProjectRegistry"
       ],
       "technical_notes": "IssuanceController.sol: ISSUANCE_FEE = 100 bps. Fee split logic: uint256 treasuryFee = totalFee * 70 / 100. Refund condition: totalRaised < minimumRaise after endTime. ERC-20 SafeTransfer for USDC and RWA tokens.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-002"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-002",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-003",
@@ -68,7 +70,7 @@
       "priority": "P0",
       "complexity": 4,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "launchpad",
@@ -93,7 +95,8 @@
         "Bilingual support (EN + ZH)"
       ],
       "technical_notes": "Route: /launchpad. Components: ProjectList.tsx, ProjectCard.tsx, ProjectFilters.tsx. Use wagmi useReadContract for project data. Implement virtualized list (react-window) for >50 projects. Color theme: warm orange (#FF6B35) for active projects, amber (#FFB74D) for pending.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-003"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-003",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-004",
@@ -103,7 +106,7 @@
       "priority": "P0",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "launchpad",
@@ -130,7 +133,8 @@
         "Success confirmation with transaction link"
       ],
       "technical_notes": "Route: /launchpad/[projectId]. Components: ProjectDetails.tsx, ComplianceDocViewer.tsx (reusable), ParticipateForm.tsx, ProjectMetrics.tsx. ComplianceDocViewer props: complianceDocURI, auditReportURI, disclosureURI. Use wagmi useSimulateContract for transaction preview.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-004"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-004",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-005",
@@ -140,7 +144,7 @@
       "priority": "P0",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "frontend",
@@ -166,7 +170,8 @@
         "Vote execution button (when threshold met)"
       ],
       "technical_notes": "Extend IGovernance interface: function votingPower(uint256 veNFTId) external view returns (uint256). ProjectRegistry.voteOnProject() records vote weighted by power. Frontend uses wagmi useAccount + useReadContract(VotingEscrow.balanceOf) to list user's veNFTs.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-005"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-005",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-006",
@@ -176,7 +181,7 @@
       "priority": "P0",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "testing",
         "launchpad",
@@ -200,7 +205,8 @@
         "Security checklist completed"
       ],
       "technical_notes": "Use Hardhat test framework for smart contracts. Use Playwright for E2E frontend tests. Integration tests in test/integration/Launchpad.integration.test.ts. Gas benchmarks: track submitProject(), voteOnProject(), participate(), claimTokens(). Security checklist: reentrancy, access control, integer overflow, front-running.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-006"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-006",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-007",
@@ -210,7 +216,7 @@
       "priority": "P1",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "oracle",
@@ -230,7 +236,8 @@
         "Oracle failure handling (fallback to single source if one fails)"
       ],
       "technical_notes": "RWAPriceOracle.sol: struct PriceSource { address chainlinkFeed; address custodianNAV; uint256 lastUpdate; uint256 deviationThreshold; }. getPrice() averages Chainlink and NAV. checkDeviation() compares |chainlinkPrice - navPrice| / navPrice > 0.05. Use AccessControl for updateNAV() (only trusted oracle). Chainlink AggregatorV3Interface.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-007"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-007",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-008",
@@ -240,7 +247,7 @@
       "priority": "P1",
       "complexity": 7,
       "estimated_days": 4,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "treasury",
@@ -263,7 +270,8 @@
         "Integration with RWAPriceOracle"
       ],
       "technical_notes": "Treasury.sol enhancement. Struct RWATier { uint8 tier; uint256 ltvRatio; uint256 mintDiscount; }. depositRWA() transfers RWA token to Treasury, calls RWAPriceOracle.getPrice(), calculates HYD amount, mints to user. redeemRWA() requires cooldown elapsed, burns HYD, transfers RWA back (minus 0.5% fee). Position struct: { address rwaAsset; uint256 rwaAmount; uint256 hydMinted; uint256 depositTime; }.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-008"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-008",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-009",
@@ -273,7 +281,7 @@
       "priority": "P1",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "smart-contract",
         "treasury",
@@ -293,7 +301,8 @@
         "Gas optimization: <300K gas per liquidation"
       ],
       "technical_notes": "LiquidationModule.sol: LIQUIDATION_THRESHOLD = 11500 (115%), LIQUIDATION_PENALTY = 500 (5%). liquidate() calculates liquidation amount to restore health to 125%, seizes RWA collateral, burns HYD debt, distributes penalty. isLiquidatable() public view for Keeper bots. Partial liquidation: liquidationAmount = min(userDebt, amountNeededToRestore125Health).",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-009"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-009",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-010",
@@ -303,7 +312,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "treasury",
@@ -329,7 +338,8 @@
         "Success confirmation with transaction link"
       ],
       "technical_notes": "Route: /treasury/deposit. Components: RWAAssetSelector.tsx, DepositForm.tsx, HYDMintPreview.tsx. Use wagmi useReadContract(RWAPriceOracle.getPrice) + useReadContract(Treasury.rwaTiers) for preview calculation. useSimulateContract for gas estimation. Color theme: warm gold (#FFD700) for deposit actions.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-010"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-010",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-011",
@@ -339,7 +349,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "treasury",
@@ -362,7 +372,8 @@
         "Export position report (CSV)"
       ],
       "technical_notes": "Route: /treasury/positions. Components: PositionList.tsx, PositionCard.tsx, HealthFactorGauge.tsx. Use wagmi useReadContract(Treasury.positions) + useBlockNumber for auto-refresh. Health factor colors: Green (#8BC34A), Yellow (#FFB74D), Red (#FF6B35). Implement useInterval(refetch, 60000) for auto-refresh. CSV export using papaparse library.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-011"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-011",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "RWA-012",
