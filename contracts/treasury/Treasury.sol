@@ -6,12 +6,18 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "../core/PSM.sol"; // For IHYD interface
 
 /// @dev Interface for DEXPair
 interface IDEXPair {
     function token0() external view returns (address);
     function token1() external view returns (address);
     function claimTreasuryFees(address to) external;
+}
+
+/// @dev Interface for RWA Price Oracle
+interface IRWAPriceOracle {
+    function getPrice() external view returns (uint256);
 }
 
 /**
@@ -50,6 +56,46 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Authorized Settlement Router address
     address public settlementRouter;
 
+    // ==================== RWA State Variables (RWA-008) ====================
+
+    /// @notice HYD token reference
+    IHYD public hydToken;
+
+    /// @notice Burn address for "effective burn" of HYD
+    address public constant BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
+
+    /// @notice Redemption fee in basis points (0.50% = 50)
+    uint256 public constant REDEMPTION_FEE_BPS = 50;
+
+    /// @notice Cooldown period for redemptions (7 days)
+    uint256 public constant COOLDOWN_PERIOD = 7 days;
+
+    /// @notice Basis points denominator (100% = 10000)
+    uint256 public constant BPS_DENOMINATOR = 10000;
+
+    /// @notice RWA tier configuration
+    struct RWATier {
+        address oracle;          // Price oracle address
+        uint8 tier;              // Tier level (1, 2, or 3)
+        uint256 ltvRatio;        // LTV in basis points (T1: 8000 = 80%)
+        uint256 mintDiscount;    // Mint discount in basis points
+        bool isActive;           // Whether asset is active
+    }
+
+    /// @notice User's RWA position
+    struct RWAPosition {
+        address rwaAsset;        // RWA token address
+        uint256 rwaAmount;       // Amount of RWA deposited
+        uint256 hydMinted;       // Amount of HYD minted
+        uint256 depositTime;     // Timestamp of deposit
+    }
+
+    /// @notice Whitelisted RWA assets: asset => tier config (includes oracle)
+    mapping(address => RWATier) public rwaAssets;
+
+    /// @notice User positions: user => asset => position
+    mapping(address => mapping(address => RWAPosition)) public userPositions;
+
     // ==================== Events ====================
 
     /// @notice Emitted when DEX fees are claimed
@@ -67,6 +113,19 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Emitted when redemption is fulfilled (PRESALE-008)
     event RedemptionFulfilled(address indexed user, uint256 indexed amount);
 
+    // RWA Events (RWA-008)
+    /// @notice Emitted when RWA asset is added to whitelist
+    event RWAAssetAdded(address indexed asset, address indexed oracle, uint8 tier, uint256 ltvRatio, uint256 mintDiscount);
+
+    /// @notice Emitted when RWA asset is removed from whitelist
+    event RWAAssetRemoved(address indexed asset);
+
+    /// @notice Emitted when user deposits RWA
+    event RWADeposited(address indexed user, address indexed asset, uint256 rwaAmount, uint256 hydMinted);
+
+    /// @notice Emitted when user redeems RWA
+    event RWARedeemed(address indexed user, address indexed asset, uint256 rwaAmount, uint256 hydBurned, uint256 fee);
+
     // ==================== Custom Errors ====================
 
     error ZeroAddress();
@@ -75,6 +134,15 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     error InsufficientBalance();
     error TransferFailed();
     error Unauthorized(); // PRESALE-008: For bond NFT and settlement router access control
+
+    // RWA Errors (RWA-008)
+    error AssetNotWhitelisted();
+    error AssetAlreadyWhitelisted();
+    error InvalidTier();
+    error InvalidLTV();
+    error NoPositionFound();
+    error CooldownNotMet();
+    error InsufficientHYDBalance();
 
     // ==================== Constructor ====================
 
@@ -87,6 +155,16 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         if (initialOwner == address(0)) revert ZeroAddress();
         if (_usdcToken == address(0)) revert ZeroAddress();
         usdcToken = IERC20(_usdcToken);
+    }
+
+    /**
+     * @notice Set HYD token address (RWA-008)
+     * @param _hydToken HYD token address
+     * @dev Only owner can set. Required before RWA operations.
+     */
+    function setHYDToken(address _hydToken) external onlyOwner {
+        if (_hydToken == address(0)) revert ZeroAddress();
+        hydToken = IHYD(_hydToken);
     }
 
     // ==================== Fee Collection ====================
@@ -215,6 +293,202 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
      * @dev Allows treasury to receive native tokens
      */
     receive() external payable {}
+
+    // ==================== RWA-008: RWA Deposit/Redeem Functions ====================
+
+    /**
+     * @notice Add RWA asset to whitelist
+     * @param asset RWA token address
+     * @param oracle Price oracle address
+     * @param tier Tier level (1, 2, or 3)
+     * @param ltvRatio LTV ratio in basis points (e.g., 8000 = 80%)
+     * @param mintDiscount Mint discount in basis points
+     * @dev Only owner can add assets. Tier determines risk profile.
+     *
+     * Example: addRWAAsset(rwaToken, oracle, 1, 8000, 0)
+     *          - Tier 1: 80% LTV, no discount
+     */
+    function addRWAAsset(
+        address asset,
+        address oracle,
+        uint8 tier,
+        uint256 ltvRatio,
+        uint256 mintDiscount
+    ) external onlyOwner {
+        if (asset == address(0)) revert ZeroAddress();
+        if (oracle == address(0)) revert ZeroAddress();
+        if (tier < 1 || tier > 3) revert InvalidTier();
+        if (ltvRatio == 0 || ltvRatio > BPS_DENOMINATOR) revert InvalidLTV();
+        if (rwaAssets[asset].isActive) revert AssetAlreadyWhitelisted();
+
+        rwaAssets[asset] = RWATier({
+            oracle: oracle,
+            tier: tier,
+            ltvRatio: ltvRatio,
+            mintDiscount: mintDiscount,
+            isActive: true
+        });
+
+        emit RWAAssetAdded(asset, oracle, tier, ltvRatio, mintDiscount);
+    }
+
+    /**
+     * @notice Remove RWA asset from whitelist
+     * @param asset RWA token address
+     * @dev Only owner can remove assets. Users with existing positions unaffected.
+     */
+    function removeRWAAsset(address asset) external onlyOwner {
+        if (asset == address(0)) revert ZeroAddress();
+        if (!rwaAssets[asset].isActive) revert AssetNotWhitelisted();
+
+        // Mark as inactive instead of deleting to preserve data
+        rwaAssets[asset].isActive = false;
+
+        emit RWAAssetRemoved(asset);
+    }
+
+    /**
+     * @notice Deposit RWA and mint HYD
+     * @param asset RWA token address
+     * @param amount Amount of RWA to deposit
+     * @dev User must approve Treasury to transfer RWA tokens first.
+     *      HYD minted = (rwaValue * ltvRatio * (10000 - mintDiscount)) / 10000^2
+     *
+     * Example: User deposits 10 RWA tokens worth $1000 each with 80% LTV
+     *          rwaValue = 10 * $1000 = $10,000
+     *          hydMinted = $10,000 * 80% = $8,000 HYD
+     */
+    function depositRWA(address asset, uint256 amount)
+        external
+        whenNotPaused
+        nonReentrant
+    {
+        if (asset == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        RWATier memory tier = rwaAssets[asset];
+        if (!tier.isActive) revert AssetNotWhitelisted();
+
+        // Get RWA price from oracle (18 decimals)
+        IRWAPriceOracle oracle = IRWAPriceOracle(tier.oracle);
+        uint256 rwaPrice = oracle.getPrice();
+
+        // Calculate RWA value in USD (18 decimals)
+        uint256 rwaValue = (amount * rwaPrice) / 1e18;
+
+        // Calculate HYD to mint: (rwaValue * ltvRatio * (10000 - mintDiscount)) / 10000^2
+        uint256 hydToMint = (rwaValue * tier.ltvRatio * (BPS_DENOMINATOR - tier.mintDiscount))
+            / (BPS_DENOMINATOR * BPS_DENOMINATOR);
+
+        // Transfer RWA from user to Treasury
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
+
+        // Mint HYD to user
+        hydToken.mint(msg.sender, hydToMint);
+
+        // Update or create user position
+        RWAPosition storage position = userPositions[msg.sender][asset];
+        if (position.rwaAsset == address(0)) {
+            // First deposit for this asset
+            userPositions[msg.sender][asset] = RWAPosition({
+                rwaAsset: asset,
+                rwaAmount: amount,
+                hydMinted: hydToMint,
+                depositTime: block.timestamp
+            });
+        } else {
+            // Add to existing position
+            position.rwaAmount += amount;
+            position.hydMinted += hydToMint;
+            // depositTime remains the original time for cooldown calculation
+        }
+
+        emit RWADeposited(msg.sender, asset, amount, hydToMint);
+    }
+
+    /**
+     * @notice Redeem RWA by burning HYD
+     * @param asset RWA token address
+     * @param amount Amount of RWA to redeem
+     * @dev User must wait COOLDOWN_PERIOD (7 days) after deposit.
+     *      Redemption fee (0.50%) is applied and kept by Treasury.
+     *      HYD is "burned" by transferring to BURN_ADDRESS.
+     *
+     * Example: User redeems 10 RWA after cooldown
+     *          fee = 10 * 0.50% = 0.05 RWA
+     *          userReceives = 10 - 0.05 = 9.95 RWA
+     *          treasuryKeeps = 0.05 RWA
+     */
+    function redeemRWA(address asset, uint256 amount)
+        external
+        whenNotPaused
+        nonReentrant
+    {
+        if (asset == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        RWAPosition storage position = userPositions[msg.sender][asset];
+        if (position.rwaAsset == address(0)) revert NoPositionFound();
+        if (position.rwaAmount < amount) revert InsufficientBalance();
+
+        // Check cooldown period
+        if (block.timestamp < position.depositTime + COOLDOWN_PERIOD) {
+            revert CooldownNotMet();
+        }
+
+        // Calculate proportional HYD to burn
+        uint256 hydToBurn = (position.hydMinted * amount) / position.rwaAmount;
+
+        // "Burn" HYD by transferring to burn address (since burnFrom is PSM-only)
+        bool success = hydToken.transferFrom(msg.sender, BURN_ADDRESS, hydToBurn);
+        if (!success) revert InsufficientHYDBalance();
+
+        // Calculate redemption fee
+        uint256 fee = (amount * REDEMPTION_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 amountAfterFee = amount - fee;
+
+        // Transfer RWA back to user (after fee)
+        IERC20(asset).safeTransfer(msg.sender, amountAfterFee);
+
+        // Update position
+        position.rwaAmount -= amount;
+        position.hydMinted -= hydToBurn;
+
+        // Clean up if position is fully redeemed
+        if (position.rwaAmount == 0) {
+            delete userPositions[msg.sender][asset];
+        }
+
+        emit RWARedeemed(msg.sender, asset, amountAfterFee, hydToBurn, fee);
+    }
+
+    /**
+     * @notice Get user's RWA position
+     * @param user User address
+     * @param asset RWA asset address
+     * @return rwaAsset RWA token address
+     * @return rwaAmount Amount of RWA deposited
+     * @return hydMinted Amount of HYD minted
+     * @return depositTime Timestamp of first deposit
+     */
+    function getUserPosition(address user, address asset)
+        external
+        view
+        returns (
+            address rwaAsset,
+            uint256 rwaAmount,
+            uint256 hydMinted,
+            uint256 depositTime
+        )
+    {
+        RWAPosition memory position = userPositions[user][asset];
+        return (
+            position.rwaAsset,
+            position.rwaAmount,
+            position.hydMinted,
+            position.depositTime
+        );
+    }
 
     // ==================== PRESALE-008: Bond NFT Settlement Integration ====================
 

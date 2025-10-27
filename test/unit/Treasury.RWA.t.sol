@@ -102,6 +102,10 @@ contract TreasuryRWATest is Test {
     vm.prank(owner);
     hydToken.authorizeMinter(address(treasury));
 
+    // Set HYD token in Treasury
+    vm.prank(owner);
+    treasury.setHYDToken(address(hydToken));
+
     // Fund user with RWA tokens
     rwaToken.mint(user, 1000 * 10**18);
 
@@ -278,7 +282,7 @@ contract TreasuryRWATest is Test {
     treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
 
     // Try to redeem immediately (should fail)
-    vm.expectRevert("Cooldown period not elapsed");
+    vm.expectRevert(Treasury.CooldownNotMet.selector);
     treasury.redeemRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
     vm.stopPrank();
   }
@@ -294,7 +298,7 @@ contract TreasuryRWATest is Test {
     vm.startPrank(user);
     rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
 
-    vm.expectRevert("RWA asset not whitelisted");
+    vm.expectRevert(Treasury.AssetNotWhitelisted.selector);
     treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
     vm.stopPrank();
   }
@@ -307,7 +311,7 @@ contract TreasuryRWATest is Test {
     treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
 
     vm.startPrank(user);
-    vm.expectRevert("Amount must be greater than zero");
+    vm.expectRevert(Treasury.ZeroAmount.selector);
     treasury.depositRWA(address(rwaToken), 0);
     vm.stopPrank();
   }
