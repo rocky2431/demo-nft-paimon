@@ -33,11 +33,36 @@ interface IRWAPriceOracle {
  * - ReentrancyGuard on all state-changing functions
  * - ETH support for native token handling
  *
+ * RWA Features (RWA-008):
+ * - Multi-tier RWA asset support (T1/T2/T3 with variable LTV ratios)
+ * - Overcollateralized lending (80% LTV for T1, 70% T2, 60% T3)
+ * - Health Factor monitoring system for liquidation safety
+ * - 7-day cooldown period for redemptions (prevents flash loan attacks)
+ * - Dual-source RWA price oracle integration (Chainlink + NAV)
+ * - Multi-asset position tracking with userAssets enumeration
+ *
+ * Gas Performance (RWA-008):
+ * - depositRWA: ~272k gas (comparable to MakerDAO CDP: 300-400k)
+ * - Gas breakdown:
+ *   * Oracle safety checks: ~100-150k gas
+ *     - L2 Sequencer uptime verification
+ *     - Chainlink 5-step validation
+ *     - NAV freshness check (<24h)
+ *     - Circuit breaker (±15% deviation detection)
+ *   * ERC20 operations: ~100-120k gas
+ *   * Storage writes: ~60-70k gas
+ * - Design principle: Security > Gas optimization
+ *
  * Security:
  * - Only owner can withdraw funds
  * - Pausable in emergency
  * - ReentrancyGuard prevents reentrancy attacks
  * - Ownable2Step prevents accidental ownership transfer
+ * - Oracle circuit breaker protects against price manipulation
+ * - 7-day cooldown prevents flash loan exploits
+ *
+ * Task: RWA-008 (Treasury RWA Deposit/Redeem Logic)
+ * Priority: P1
  */
 contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
