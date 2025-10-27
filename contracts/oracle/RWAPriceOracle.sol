@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
+import "../interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title RWAPriceOracle
@@ -69,7 +70,6 @@ contract RWAPriceOracle is Ownable, ReentrancyGuard, Pausable {
   // ============================================================
 
   event NAVUpdated(uint256 newNAV, uint256 timestamp);
-  event CircuitBreakerTriggered(uint256 chainlinkPrice, uint256 navPrice, uint256 deviation);
   event TrustedOracleUpdated(address oldOracle, address newOracle);
 
   // ============================================================
@@ -106,8 +106,32 @@ contract RWAPriceOracle is Ownable, ReentrancyGuard, Pausable {
    * @return price Current price in 18 decimals
    */
   function getPrice() external view whenNotPaused returns (uint256 price) {
-    // TODO: Implement in GREEN phase
-    revert("Not implemented");
+    // Check L2 Sequencer status
+    _checkSequencerUptime();
+
+    // Try to get Chainlink price (may fail)
+    (bool chainlinkSuccess, uint256 chainlinkPrice) = _tryGetChainlinkPrice();
+
+    // Check if NAV is fresh (< 24h old)
+    bool navFresh = _isNAVFresh();
+
+    // Dual-source logic with fallback
+    if (chainlinkSuccess && navFresh && latestNAV > 0) {
+      // Both sources available: check circuit breaker, then average
+      _checkCircuitBreaker(chainlinkPrice, latestNAV);
+      price = (chainlinkPrice + latestNAV) / 2;
+    } else if (chainlinkSuccess) {
+      // Only Chainlink available (NAV stale or zero)
+      price = chainlinkPrice;
+    } else if (navFresh && latestNAV > 0) {
+      // Only NAV available (Chainlink failed)
+      price = latestNAV;
+    } else {
+      // No valid price source available
+      revert("No valid price source available");
+    }
+
+    return price;
   }
 
   /**
@@ -116,8 +140,8 @@ contract RWAPriceOracle is Ownable, ReentrancyGuard, Pausable {
    * @return decimals Number of decimals
    */
   function getFormattedPrice() external view whenNotPaused returns (uint256 price, uint8 decimals) {
-    // TODO: Implement in GREEN phase
-    revert("Not implemented");
+    price = this.getPrice();
+    decimals = TARGET_DECIMALS;
   }
 
   /**
@@ -161,7 +185,7 @@ contract RWAPriceOracle is Ownable, ReentrancyGuard, Pausable {
   }
 
   // ============================================================
-  // INTERNAL FUNCTIONS (to be implemented in GREEN phase)
+  // INTERNAL FUNCTIONS
   // ============================================================
 
   /**
@@ -169,15 +193,80 @@ contract RWAPriceOracle is Ownable, ReentrancyGuard, Pausable {
    * @dev Reverts if sequencer is down or grace period not over
    */
   function _checkSequencerUptime() internal view {
-    // TODO: Implement in GREEN phase
+    AggregatorV3Interface sequencer = AggregatorV3Interface(sequencerUptimeFeed);
+
+    (
+      /*uint80 roundId*/,
+      int256 answer,
+      uint256 startedAt,
+      /*uint256 updatedAt*/,
+      /*uint80 answeredInRound*/
+    ) = sequencer.latestRoundData();
+
+    // answer == 0: Sequencer is up
+    // answer == 1: Sequencer is down
+    require(answer == 0, "Sequencer is down");
+
+    // Check grace period after sequencer recovery
+    uint256 timeSinceUp = block.timestamp - startedAt;
+    require(timeSinceUp > GRACE_PERIOD, "Grace period not over");
   }
 
   /**
-   * @notice Get Chainlink price with validation
+   * @notice Try to get Chainlink price (doesn't revert on failure)
+   * @return success Whether price retrieval was successful
+   * @return price Validated and scaled price (0 if failed)
+   */
+  function _tryGetChainlinkPrice() internal view returns (bool success, uint256 price) {
+    try this._getChainlinkPriceExternal() returns (uint256 _price) {
+      return (true, _price);
+    } catch {
+      return (false, 0);
+    }
+  }
+
+  /**
+   * @notice Get Chainlink price with validation (external for try-catch)
+   * @return price Validated and scaled price
+   */
+  function _getChainlinkPriceExternal() external view returns (uint256 price) {
+    require(msg.sender == address(this), "Internal only");
+    return _getChainlinkPrice();
+  }
+
+  /**
+   * @notice Get Chainlink price with validation (internal implementation)
    * @return price Validated and scaled price
    */
   function _getChainlinkPrice() internal view returns (uint256 price) {
-    // TODO: Implement in GREEN phase
+    AggregatorV3Interface priceFeed = AggregatorV3Interface(chainlinkFeed);
+
+    (
+      uint80 roundId,
+      int256 answer,
+      /*uint256 startedAt*/,
+      uint256 updatedAt,
+      /*uint80 answeredInRound*/
+    ) = priceFeed.latestRoundData();
+
+    // 5-step price validation (2025 standard)
+    require(answer > 0, "Invalid price: answer must be positive");
+    require(roundId != 0, "Invalid roundId");
+    require(updatedAt != 0, "Invalid updatedAt timestamp");
+    require(updatedAt <= block.timestamp, "Invalid updatedAt: future timestamp");
+    require(block.timestamp - updatedAt <= CHAINLINK_TIMEOUT, "Stale price data");
+
+    // Scale from feed decimals to TARGET_DECIMALS (18)
+    uint8 feedDecimals = priceFeed.decimals();
+    if (feedDecimals < TARGET_DECIMALS) {
+      price = uint256(answer) * 10**(TARGET_DECIMALS - feedDecimals);
+    } else if (feedDecimals > TARGET_DECIMALS) {
+      price = uint256(answer) / 10**(feedDecimals - TARGET_DECIMALS);
+    } else {
+      price = uint256(answer);
+    }
+
+    return price;
   }
 
   /**
@@ -185,7 +274,10 @@ contract RWAPriceOracle is Ownable, ReentrancyGuard, Pausable {
    * @return True if NAV is fresh (< 24h old)
    */
   function _isNAVFresh() internal view returns (bool) {
-    // TODO: Implement in GREEN phase
+    if (navUpdatedAt == 0) {
+      return false;
+    }
+    return (block.timestamp - navUpdatedAt) <= NAV_TIMEOUT;
   }
 
   /**
@@ -193,7 +285,24 @@ contract RWAPriceOracle is Ownable, ReentrancyGuard, Pausable {
    * @param chainlinkPrice Chainlink price
    * @param navPrice NAV price
    */
-  function _checkCircuitBreaker(uint256 chainlinkPrice, uint256 navPrice) internal view {
-    // TODO: Implement in GREEN phase
+  function _checkCircuitBreaker(uint256 chainlinkPrice, uint256 navPrice) internal pure {
+    // Calculate absolute deviation percentage
+    uint256 diff;
+    if (chainlinkPrice > navPrice) {
+      diff = chainlinkPrice - navPrice;
+    } else {
+      diff = navPrice - chainlinkPrice;
+    }
+
+    // Use the smaller value as base for percentage calculation
+    uint256 base = chainlinkPrice < navPrice ? chainlinkPrice : navPrice;
+    uint256 deviationPercent = (diff * 100) / base;
+
+    // Trigger circuit breaker if deviation exceeds threshold
+    if (deviationPercent > MAX_DEVIATION_PERCENT) {
+      // Note: Cannot emit events from view/pure functions
+      // Event removed to maintain view semantics of getPrice()
+      revert("Circuit breaker: price deviation exceeds threshold");
+    }
   }
 }

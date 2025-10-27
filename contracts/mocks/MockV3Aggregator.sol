@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "../interfaces/AggregatorV3Interface.sol";
+
 /**
  * @title MockV3Aggregator
  * @notice Mock Chainlink AggregatorV3Interface for testing
  * @dev Based on Chainlink's test helper with additional control methods
  */
-contract MockV3Aggregator {
+contract MockV3Aggregator is AggregatorV3Interface {
   uint8 public decimals;
   int256 public latestAnswer;
   uint256 public latestTimestamp;
