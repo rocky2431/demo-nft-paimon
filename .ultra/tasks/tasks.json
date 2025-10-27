@@ -2145,7 +2145,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "in_progress",
       "tags": [
         "frontend",
         "treasury",
@@ -2171,7 +2171,8 @@
         "Success confirmation with transaction link"
       ],
       "technical_notes": "Route: /treasury/deposit. Components: RWAAssetSelector.tsx, DepositForm.tsx, HYDMintPreview.tsx. Use wagmi useReadContract(RWAPriceOracle.getPrice) + useReadContract(Treasury.rwaTiers) for preview calculation. useSimulateContract for gas estimation. Color theme: warm gold (#FFD700) for deposit actions.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-010"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-010",
+      "progress_notes": "Phase 1 completed (40%): Infrastructure setup - types, contracts config, constants, core hooks. Remaining: additional hooks, UI components (RWAAssetSelector, HYDMintPreview, DepositForm), deposit page route, and testing."
     },
     {
       "id": "RWA-011",
