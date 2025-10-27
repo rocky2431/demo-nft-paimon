@@ -34,6 +34,7 @@ contract TreasuryRWATest is Test {
   RWAPriceOracle public oracle;
   MockERC20 public usdc;
   MockERC20 public rwaToken;
+  MockERC20 public rwaToken2; // Second RWA asset for multi-asset tests
   MockV3Aggregator public ethUsdFeed;
   MockV3Aggregator public sequencerFeed;
 
@@ -68,6 +69,7 @@ contract TreasuryRWATest is Test {
     // Deploy mock tokens
     usdc = new MockERC20("USD Coin", "USDC", 6);
     rwaToken = new MockERC20("RWA Token", "RWA", 18);
+    rwaToken2 = new MockERC20("RWA Token 2", "RWA2", 18);
 
     // Deploy Chainlink mock feeds
     ethUsdFeed = new MockV3Aggregator(8, int256(INITIAL_RWA_PRICE / 10**10)); // Scale to 8 decimals
@@ -414,8 +416,7 @@ contract TreasuryRWATest is Test {
    * @notice Test: Deposit multiple different RWA assets
    */
   function test_DepositRWA_MultipleAssets_Success() public {
-    // Deploy second RWA token
-    MockERC20 rwaToken2 = new MockERC20("RWA Token 2", "RWA2", 18);
+    // Mint second RWA token to user
     rwaToken2.mint(user, 1000 * 10**18);
 
     // Add both assets
@@ -441,5 +442,239 @@ contract TreasuryRWATest is Test {
 
     assertEq(amount1, RWA_DEPOSIT_AMOUNT);
     assertEq(amount2, RWA_DEPOSIT_AMOUNT);
+  }
+
+  // ============================================================
+  // STAGE 2: HEALTH FACTOR & MONITORING TESTS
+  // ============================================================
+
+  /**
+   * @notice Test: Calculate Health Factor for single asset position
+   * @dev Health Factor = (rwaValue / hydDebt) * 100
+   *      Example: $10,000 RWA, $8,000 HYD debt → HF = 125%
+   */
+  function test_GetHealthFactor_SingleAsset_Success() public {
+    // Setup: Deposit RWA (T1: 80% LTV)
+    vm.prank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
+
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // Calculate expected HF
+    // rwaValue = 10 RWA * $1000 = $10,000
+    // hydDebt = $10,000 * 80% = $8,000
+    // healthFactor = ($10,000 / $8,000) * 100 = 125%
+    uint256 healthFactor = treasury.getHealthFactor(user);
+    assertEq(healthFactor, 125); // 125%
+  }
+
+  /**
+   * @notice Test: Calculate Health Factor for multiple assets
+   * @dev Should aggregate all positions
+   */
+  function test_GetHealthFactor_MultipleAssets_Success() public {
+    // Setup two RWA assets
+    vm.startPrank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0); // 80% LTV
+    treasury.addRWAAsset(address(rwaToken2), address(oracle), 2, LTV_T2, 0); // 65% LTV
+    vm.stopPrank();
+
+    // Deposit both assets
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+
+    rwaToken2.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken2), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // Calculate expected HF
+    // Total rwaValue = $10,000 + $10,000 = $20,000
+    // Total hydDebt = $8,000 + $6,500 = $14,500
+    // healthFactor = ($20,000 / $14,500) * 100 = 137.93%
+    uint256 healthFactor = treasury.getHealthFactor(user);
+    assertApproxEqRel(healthFactor, 137, 0.01e18); // ~137%
+  }
+
+  /**
+   * @notice Test: Health Factor after price change
+   * @dev Simulate RWA price drop and verify HF decreases
+   */
+  function test_GetHealthFactor_AfterPriceDrop_Decreases() public {
+    // Initial deposit
+    vm.prank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
+
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // Initial HF = 125%
+    uint256 healthFactorBefore = treasury.getHealthFactor(user);
+    assertEq(healthFactorBefore, 125);
+
+    // Simulate price drop: $1000 → $800 (-20%)
+    vm.prank(owner);
+    oracle.updateNAV(800 * 10**18);
+
+    // New HF = ($8,000 / $8,000) * 100 = 100%
+    uint256 healthFactorAfter = treasury.getHealthFactor(user);
+    assertEq(healthFactorAfter, 100);
+  }
+
+  /**
+   * @notice Test: Health Factor boundary - Healthy zone (>150%)
+   */
+  function test_GetHealthFactor_HealthyZone_Above150() public {
+    // Setup with T3 (50% LTV) for higher HF
+    vm.prank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 3, LTV_T3, 0);
+
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // HF = ($10,000 / $5,000) * 100 = 200%
+    uint256 healthFactor = treasury.getHealthFactor(user);
+    assertEq(healthFactor, 200);
+    assertTrue(healthFactor > 150, "Should be in healthy zone");
+  }
+
+  /**
+   * @notice Test: Health Factor boundary - Warning zone (100-150%)
+   */
+  function test_GetHealthFactor_WarningZone_100to150() public {
+    vm.prank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
+
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // HF = 125% (in warning zone)
+    uint256 healthFactor = treasury.getHealthFactor(user);
+    assertEq(healthFactor, 125);
+    assertTrue(healthFactor >= 100 && healthFactor <= 150, "Should be in warning zone");
+  }
+
+  /**
+   * @notice Test: Health Factor boundary - Danger zone (<100%)
+   */
+  function test_GetHealthFactor_DangerZone_Below100() public {
+    vm.prank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
+
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // Simulate severe price drop: $1000 → $700 (-30%)
+    vm.prank(owner);
+    oracle.updateNAV(700 * 10**18);
+
+    // New HF = ($7,000 / $8,000) * 100 = 87.5%
+    uint256 healthFactor = treasury.getHealthFactor(user);
+    assertEq(healthFactor, 87);
+    assertTrue(healthFactor < 100, "Should be in danger zone");
+  }
+
+  /**
+   * @notice Test: Get all user positions
+   */
+  function test_GetAllUserPositions_MultipleAssets_Success() public {
+    // Setup two assets
+    vm.startPrank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
+    treasury.addRWAAsset(address(rwaToken2), address(oracle), 2, LTV_T2, 0);
+    vm.stopPrank();
+
+    // Deposit both
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+
+    rwaToken2.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken2), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // Query all positions
+    (address[] memory assets, uint256[] memory amounts, uint256[] memory debts)
+      = treasury.getAllUserPositions(user);
+
+    assertEq(assets.length, 2);
+    assertEq(amounts.length, 2);
+    assertEq(debts.length, 2);
+
+    // Verify first position
+    assertEq(assets[0], address(rwaToken));
+    assertEq(amounts[0], RWA_DEPOSIT_AMOUNT);
+
+    // Verify second position
+    assertEq(assets[1], address(rwaToken2));
+    assertEq(amounts[1], RWA_DEPOSIT_AMOUNT);
+  }
+
+  /**
+   * @notice Test: Get total collateral value
+   */
+  function test_GetTotalCollateralValue_MultipleAssets_Success() public {
+    // Setup and deposit two assets
+    vm.startPrank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
+    treasury.addRWAAsset(address(rwaToken2), address(oracle), 2, LTV_T2, 0);
+    vm.stopPrank();
+
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+
+    rwaToken2.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken2), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // Total collateral = $10,000 + $10,000 = $20,000
+    uint256 totalCollateral = treasury.getTotalCollateralValue(user);
+    assertEq(totalCollateral, 20_000 * 10**18);
+  }
+
+  /**
+   * @notice Test: Get total debt value
+   */
+  function test_GetTotalDebtValue_MultipleAssets_Success() public {
+    // Setup and deposit two assets
+    vm.startPrank(owner);
+    treasury.addRWAAsset(address(rwaToken), address(oracle), 1, LTV_T1, 0);
+    treasury.addRWAAsset(address(rwaToken2), address(oracle), 2, LTV_T2, 0);
+    vm.stopPrank();
+
+    vm.startPrank(user);
+    rwaToken.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken), RWA_DEPOSIT_AMOUNT);
+
+    rwaToken2.approve(address(treasury), RWA_DEPOSIT_AMOUNT);
+    treasury.depositRWA(address(rwaToken2), RWA_DEPOSIT_AMOUNT);
+    vm.stopPrank();
+
+    // Total debt = $8,000 (T1) + $6,500 (T2) = $14,500
+    uint256 totalDebt = treasury.getTotalDebtValue(user);
+    assertEq(totalDebt, 14_500 * 10**18);
+  }
+
+  /**
+   * @notice Test: Health Factor with no positions (should revert or return max)
+   */
+  function test_GetHealthFactor_NoPosition_ReturnsMax() public {
+    // User with no deposits
+    uint256 healthFactor = treasury.getHealthFactor(user);
+
+    // Should return type(uint256).max (infinite health)
+    assertEq(healthFactor, type(uint256).max);
   }
 }
