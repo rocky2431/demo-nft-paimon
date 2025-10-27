@@ -689,8 +689,8 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         // Calculate health factor
         uint256 hf = this.getHealthFactor(user);
 
-        // Liquidatable if HF < 115%
-        return hf < LIQUIDATION_THRESHOLD;
+        // Liquidatable if HF <= 115%
+        return hf <= LIQUIDATION_THRESHOLD;
     }
 
     /**
@@ -717,8 +717,8 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         // Get health factor
         healthFactor = this.getHealthFactor(user);
 
-        // Check if liquidatable
-        _isLiquidatable = healthFactor < LIQUIDATION_THRESHOLD && position.hydMinted > 0;
+        // Check if liquidatable (HF <= 115%)
+        _isLiquidatable = healthFactor <= LIQUIDATION_THRESHOLD && position.hydMinted > 0;
 
         if (_isLiquidatable) {
             // Max liquidatable = full debt (can liquidate entire position)
@@ -759,8 +759,29 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         IRWAPriceOracle oracle = IRWAPriceOracle(tier.oracle);
         uint256 price = oracle.getPrice();
 
-        // Cap hydAmount to available debt
-        uint256 actualHydAmount = hydAmount > position.hydMinted ? position.hydMinted : hydAmount;
+        // For partial liquidation, calculate amount needed to restore to 125% HF
+        uint256 actualHydAmount;
+        if (hydAmount < position.hydMinted) {
+            // Partial liquidation: calculate required amount to restore to TARGET_HEALTH_FACTOR (125%)
+            uint256 collateralValue = (position.rwaAmount * price) / 1e18;
+            uint256 debtValue = position.hydMinted;
+
+            // Mathematical derivation:
+            // New HF = (C - 1.05ΔH) / (D - ΔH) = 1.25
+            // Solving for ΔH: ΔH = (1.25D - C) / 0.20 = (1.25D - C) * 5
+            //
+            // To avoid decimals, multiply by 100:
+            // numerator = 125 * D - 100 * C
+            // denominator = 20
+            uint256 numerator = (125 * debtValue) - (100 * collateralValue);
+            uint256 requiredHydAmount = numerator / 20;
+
+            // Use the required amount (ignore user's hydAmount for partial liquidation)
+            actualHydAmount = requiredHydAmount;
+        } else {
+            // Full liquidation: cap to available debt
+            actualHydAmount = position.hydMinted;
+        }
 
         // Convert HYD to base RWA amount (1:1 USD peg)
         uint256 baseRWA = (actualHydAmount * 1e18) / price;
@@ -789,14 +810,15 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         // Liquidator receives base + 4% bonus
         uint256 totalSeized = baseRWA + liquidatorBonus;
 
-        // "Burn" HYD debt from liquidator (transfer to burn address, since burnFrom is PSM-only)
+        // Transfer HYD from liquidator to burn address
+        // Note: Using transfer instead of burnFrom because burnFrom is restricted to PSM-only
         bool success = hydToken.transferFrom(msg.sender, BURN_ADDRESS, actualHydAmount);
         if (!success) revert InsufficientHYDBalance();
 
-        // Transfer RWA to liquidator (with bonus)
+        // Transfer seized RWA collateral to liquidator (base + 4% liquidator bonus)
         IERC20(asset).safeTransfer(msg.sender, totalSeized);
 
-        // Protocol fee stays in Treasury (protocolFee)
+        // Protocol retains 1% penalty in Treasury (no explicit transfer needed)
 
         // Update position
         position.rwaAmount -= totalDeducted;
