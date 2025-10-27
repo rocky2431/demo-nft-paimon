@@ -1446,7 +1446,7 @@
       "priority": "P1",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "ui",
@@ -1467,7 +1467,9 @@
         "TypeScript 0 errors"
       ],
       "technical_notes": "Use wagmi useWriteContract for SettlementRouter.settleAsVeNFT() and settleAsCash(). Components: OptionComparisonTable (2-column table), VeNFTOption (lock duration slider MUI Slider 3-48 months, voting power preview), CashOption (amount display), SettlementButton, ConfirmationModal. Comparison metrics: veNFT shows 'Lock X HYD for Y months → Z voting power → Earn ~A% APY', Cash shows 'Receive X USDC immediately'. Route: /presale/settle/:tokenId. After settlement, redirect to success page with transaction hash.",
-      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md#frontend-development"
+      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md#frontend-development",
+      "started_date": "2025-10-27",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "PRESALE-016",
