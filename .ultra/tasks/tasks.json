@@ -1871,7 +1871,7 @@
       "priority": "P0",
       "complexity": 6,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "in_progress",
       "tags": [
         "frontend",
         "launchpad",
@@ -1898,7 +1898,8 @@
         "Success confirmation with transaction link"
       ],
       "technical_notes": "Route: /launchpad/[projectId]. Components: ProjectDetails.tsx, ComplianceDocViewer.tsx (reusable), ParticipateForm.tsx, ProjectMetrics.tsx. ComplianceDocViewer props: complianceDocURI, auditReportURI, disclosureURI. Use wagmi useSimulateContract for transaction preview.",
-      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-004"
+      "reference": ".ultra/docs/planning/PHASE-3.6-RWA-CORE-TASKS.md#rwa-004",
+      "started_at": "2025-10-27T13:00:00Z"
     },
     {
       "id": "RWA-005",
