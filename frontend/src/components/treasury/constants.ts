@@ -48,15 +48,23 @@ export const TREASURY_CONFIG = {
   LIQUIDATION_PENALTY: 5, // 5%
 } as const;
 
-// Color Theme (warm colors)
+// Color Theme (warm colors - matching Presale style for consistency)
 export const TREASURY_THEME = {
-  PRIMARY: '#FFD700', // Warm gold
+  // Text colors (matching Presale for unified UX)
+  TITLE: '#D17A00', // Deep orange-brown (main headings)
+  SUBTITLE: '#8B4000', // Brown (descriptions, body text)
+  CAPTION: '#A0522D', // Light brown (small text, captions)
+  EMPHASIS: '#FF8C00', // Deep orange (values, emphasis)
+
+  // UI colors
+  PRIMARY: '#FFD700', // Warm gold (borders, accents)
   SECONDARY: '#FF8C00', // Dark orange
   ACCENT: '#FFA500', // Orange
   SUCCESS: '#8BC34A', // Light Green (for health factor)
   WARNING: '#FFB74D', // Deep Orange (for health factor)
   ERROR: '#FF6B35', // Warm Red-Orange (for health factor)
   BACKGROUND: '#FFF8E7', // Cornsilk
+  CARD_BG: '#FFF8E1', // Light yellow (card backgrounds, matching Presale)
 } as const;
 
 /**
@@ -66,35 +74,35 @@ export const TREASURY_THEME = {
  */
 export const TREASURY_CARD_STYLES = {
   /**
-   * Primary card style (default) - with subtle golden glow
+   * Primary card style (default) - with subtle golden glow and warm background
    */
   primary: {
-    backgroundColor: 'background.paper',
+    backgroundColor: TREASURY_THEME.CARD_BG, // Light yellow, matching Presale
     borderRadius: 3, // 24px (MUI spacing unit * 3)
     border: `1px solid ${TREASURY_THEME.PRIMARY}`,
-    boxShadow: '0 4px 12px rgba(255, 215, 0, 0.12)',
+    boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)', // Matching Presale shadow
     transition: 'box-shadow 0.3s ease',
     '&:hover': {
-      boxShadow: '0 6px 20px rgba(255, 215, 0, 0.2)',
+      boxShadow: '0 4px 12px rgba(255, 140, 0, 0.15)',
     },
   },
   /**
    * Secondary card style (less emphasis)
    */
   secondary: {
-    backgroundColor: 'background.paper',
+    backgroundColor: 'white',
     borderRadius: 3,
     border: `1px solid`,
     borderColor: 'divider',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+    boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)',
   },
   /**
    * Info card style (informational content)
    */
   info: {
-    backgroundColor: 'background.paper',
+    backgroundColor: TREASURY_THEME.CARD_BG, // Light yellow background
     borderRadius: 2,
     border: `1px solid ${TREASURY_THEME.SECONDARY}`,
-    boxShadow: 'none',
+    boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)',
   },
 } as const;

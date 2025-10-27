@@ -41,7 +41,7 @@ export default function TreasuryPositionsPage() {
             variant="h3"
             sx={{
               fontWeight: 800,
-              color: TREASURY_THEME.PRIMARY,
+              color: TREASURY_THEME.TITLE,
               mb: 2,
               fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
             }}
@@ -50,8 +50,8 @@ export default function TreasuryPositionsPage() {
           </Typography>
           <Typography
             variant="h6"
-            color="text.secondary"
             sx={{
+              color: TREASURY_THEME.SUBTITLE,
               maxWidth: 700,
               mx: 'auto',
               fontSize: { xs: '1rem', sm: '1.125rem' },
@@ -76,20 +76,20 @@ export default function TreasuryPositionsPage() {
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: TREASURY_THEME.PRIMARY,
+              color: TREASURY_THEME.TITLE,
               mb: 2,
             }}
           >
             Understanding Health Factor
           </Typography>
           <Box component="ul" sx={{ pl: 2, m: 0 }}>
-            <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography component="li" variant="body2" sx={{ mb: 1, color: TREASURY_THEME.SUBTITLE }}>
               <strong>Healthy (Green, &gt;150%):</strong> Your position is safe with plenty of buffer
             </Typography>
-            <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography component="li" variant="body2" sx={{ mb: 1, color: TREASURY_THEME.SUBTITLE }}>
               <strong>Warning (Yellow, 115-150%):</strong> Consider adding collateral to improve safety
             </Typography>
-            <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography component="li" variant="body2" sx={{ mb: 1, color: TREASURY_THEME.SUBTITLE }}>
               <strong>At Risk (Red, &lt;115%):</strong> Position may be liquidated. Add collateral immediately
             </Typography>
           </Box>
@@ -99,23 +99,23 @@ export default function TreasuryPositionsPage() {
               variant="subtitle2"
               sx={{
                 fontWeight: 700,
-                color: TREASURY_THEME.ACCENT,
+                color: TREASURY_THEME.EMPHASIS,
                 mb: 1,
               }}
             >
               Position Actions:
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              <Typography component="li" variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
+              <Typography component="li" variant="caption" sx={{ mb: 0.5, color: TREASURY_THEME.CAPTION }}>
                 <strong>Redeem Collateral:</strong> Withdraw your RWA assets after 7-day cooldown period
               </Typography>
-              <Typography component="li" variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
+              <Typography component="li" variant="caption" sx={{ mb: 0.5, color: TREASURY_THEME.CAPTION }}>
                 <strong>Add Collateral:</strong> Deposit more RWA to improve your health factor
               </Typography>
-              <Typography component="li" variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
+              <Typography component="li" variant="caption" sx={{ mb: 0.5, color: TREASURY_THEME.CAPTION }}>
                 <strong>Auto-Refresh:</strong> Positions automatically update every 60 seconds
               </Typography>
-              <Typography component="li" variant="caption" color="text.secondary">
+              <Typography component="li" variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
                 <strong>Export CSV:</strong> Download your position history for record keeping
               </Typography>
             </Box>
@@ -125,11 +125,11 @@ export default function TreasuryPositionsPage() {
         {/* Footer info */}
         <Typography
           variant="body2"
-          color="text.secondary"
           sx={{
             mt: 4,
             textAlign: 'center',
             fontSize: '0.875rem',
+            color: TREASURY_THEME.CAPTION,
           }}
         >
           RWA Treasury • BSC Network • Real-time Monitoring

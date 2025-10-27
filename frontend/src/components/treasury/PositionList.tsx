@@ -131,10 +131,10 @@ export function PositionList() {
         }}
       >
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2, color: TREASURY_THEME.PRIMARY }}>
+          <Typography variant="h6" sx={{ mb: 2, color: TREASURY_THEME.TITLE }}>
             No Treasury Positions Found
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ mb: 3, color: TREASURY_THEME.SUBTITLE }}>
             You haven't deposited any RWA collateral yet. Visit the Deposit page to get started.
           </Typography>
           <Button
@@ -170,10 +170,10 @@ export function PositionList() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: TREASURY_THEME.PRIMARY }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: TREASURY_THEME.TITLE }}>
             Your Positions
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
             Last updated: {lastRefreshTime.toLocaleTimeString()} • Auto-refresh in 60s
           </Typography>
         </Box>
@@ -217,33 +217,33 @@ export function PositionList() {
       {/* Overall stats summary */}
       <Card sx={{ ...TREASURY_CARD_STYLES.primary, mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: TREASURY_THEME.PRIMARY }}>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: TREASURY_THEME.TITLE }}>
             Portfolio Overview
           </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={4}>
               <Box>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
                   Total Collateral
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: TREASURY_THEME.ACCENT }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: TREASURY_THEME.EMPHASIS }}>
                   ${totalCollateralUSD.toFixed(2)}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Box>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: TREASURY_THEME.CAPTION }}>
                   Total Debt (HYD)
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: TREASURY_THEME.EMPHASIS }}>
                   ${totalDebtUSD.toFixed(2)}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                <Typography variant="caption" sx={{ mb: 1, display: 'block', color: TREASURY_THEME.CAPTION }}>
                   Overall Health Factor
                 </Typography>
                 <HealthFactorGauge healthFactor={overallHealthFactor} compact />
