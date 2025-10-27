@@ -12,11 +12,11 @@
   },
   "stats": {
     "total": 51,
-    "pending": 20,
+    "pending": 19,
     "in_progress": 0,
     "review": 1,
     "blocked": 0,
-    "completed": 30,
+    "completed": 31,
     "cancelled": 0,
     "by_priority": {
       "P0": 30,
@@ -1378,7 +1378,7 @@
       "priority": "P1",
       "complexity": 5,
       "estimated_days": 3,
-      "status": "pending",
+      "status": "completed",
       "tags": [
         "frontend",
         "ui",
@@ -1400,7 +1400,9 @@
         "TypeScript 0 errors"
       ],
       "technical_notes": "Use wagmi useReadContract for Leaderboard.getTopEarners(), getLuckiestRollers(), getSocialChampions(). Components: LeaderboardTabs (MUI Tabs), LeaderboardTable (top 10 list), RankBadge (1st/2nd/3rd medals), UserRankDisplay (current user). Auto-refresh: useInterval(30000). ENS integration: use wagmi useEnsName(address). Score formatting: Top Earners shows 'X.XX USDC', Luckiest shows dice roll 'Rolled 20!', Social shows 'X tasks'. Route: /presale/leaderboards. Prize pool display: 'Top 3 earn extra 500 USDC!'",
-      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md"
+      "reference": ".ultra/docs/analysis/DOCE2-IMPLEMENTATION-GAP.md",
+      "started_date": "2025-10-27",
+      "completed_date": "2025-10-27"
     },
     {
       "id": "PRESALE-014",
