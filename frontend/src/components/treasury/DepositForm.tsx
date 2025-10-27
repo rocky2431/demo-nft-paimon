@@ -124,7 +124,7 @@ export function DepositForm() {
     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
       {/* Left: Form */}
       <Box sx={{ flex: 1 }}>
-        <Card sx={TREASURY_CARD_STYLES.primary}>
+        <Card sx={TREASURY_CARD_STYLES.secondary}>
           <CardContent>
             <Typography
               variant="h5"
