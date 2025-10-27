@@ -1,7 +1,8 @@
 'use client';
 
-import { Box, Button, Card, CardContent, Typography, CircularProgress, Alert, LinearProgress } from '@mui/material';
+import { Box, Button, CardContent, Typography, CircularProgress, Alert, LinearProgress } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { StyledCard } from '@/components/common';
 import { QuantitySelector } from './QuantitySelector';
 import { CostDisplay } from './CostDisplay';
 import { useMintBondNFT } from './hooks/useMintBondNFT';
@@ -42,13 +43,13 @@ export function MintInterface() {
       </Typography>
 
       {/* Supply Progress */}
-      <Card sx={{ mb: 3, bgcolor: '#FFF8E1', boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)' }}>
+      <StyledCard variant="accent" sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" sx={{ color: '#8B4000' }}>
+            <Typography variant="body1" sx={{ color: 'rgba(0, 0, 0, 0.7)', fontWeight: 600 }}>
               Total Minted:
             </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#FF8C00' }}>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: 'rgba(0, 0, 0, 0.9)' }}>
               {totalSupply.toLocaleString()} / {MINT_CONFIG.MAX_SUPPLY.toLocaleString()}
             </Typography>
           </Box>
@@ -56,28 +57,29 @@ export function MintInterface() {
             variant="determinate"
             value={progress}
             sx={{
-              height: 8,
-              borderRadius: 4,
-              bgcolor: '#FFCC80',
+              height: 10,
+              borderRadius: 5,
+              bgcolor: 'rgba(255, 255, 255, 0.3)',
               '& .MuiLinearProgress-bar': {
-                bgcolor: '#FF8C00',
+                bgcolor: 'rgba(0, 0, 0, 0.2)',
+                borderRadius: 5,
               },
             }}
           />
-          <Typography variant="caption" sx={{ display: 'block', mt: 1, textAlign: 'center', color: '#A0522D' }}>
+          <Typography variant="body2" sx={{ display: 'block', mt: 1.5, textAlign: 'center', color: 'rgba(0, 0, 0, 0.7)', fontWeight: 500 }}>
             {remaining.toLocaleString()} NFTs remaining
           </Typography>
         </CardContent>
-      </Card>
+      </StyledCard>
 
       {/* Quantity Selector */}
-      <Card sx={{ mb: 3, bgcolor: 'white', boxShadow: '0 2px 8px rgba(255, 140, 0, 0.1)' }}>
+      <StyledCard variant="white" sx={{ mb: 3 }}>
         <QuantitySelector
           quantity={quantity}
           onChange={setQuantity}
           disabled={isApproving || isMinting}
         />
-      </Card>
+      </StyledCard>
 
       {/* Cost Display */}
       <Box sx={{ mb: 3 }}>
@@ -190,7 +192,7 @@ export function MintInterface() {
       </Box>
 
       {/* Info Card */}
-      <Card sx={{ mt: 4, bgcolor: '#FFF3E0', boxShadow: 'none' }}>
+      <StyledCard variant="accent" sx={{ mt: 4 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2, color: '#D17A00' }}>
             Bond NFT Benefits
@@ -218,7 +220,7 @@ export function MintInterface() {
             </li>
           </Box>
         </CardContent>
-      </Card>
+      </StyledCard>
     </Box>
   );
 }

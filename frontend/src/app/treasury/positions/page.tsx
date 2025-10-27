@@ -8,7 +8,7 @@
 import { Container, Typography, Box } from '@mui/material';
 import { Navigation } from '@/components/layout/Navigation';
 import { PositionList } from '@/components/treasury/PositionList';
-import { TREASURY_THEME, TREASURY_CARD_STYLES } from '@/components/treasury/constants';
+import { TREASURY_THEME } from '@/components/treasury/constants';
 
 export default function TreasuryPositionsPage() {
   return (
@@ -67,9 +67,11 @@ export default function TreasuryPositionsPage() {
         {/* Info section */}
         <Box
           sx={{
-            ...TREASURY_CARD_STYLES.info,
             mt: 6,
             p: 3,
+            backgroundColor: TREASURY_THEME.CARD_BG,
+            borderRadius: 2,
+            border: `1px solid ${TREASURY_THEME.PRIMARY}`,
           }}
         >
           <Typography

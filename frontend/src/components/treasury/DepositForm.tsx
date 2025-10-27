@@ -84,8 +84,8 @@ export function DepositForm() {
     amountNum > 0 &&
     amountNum >= TREASURY_CONFIG.MIN_DEPOSIT_AMOUNT &&
     amountNum <= TREASURY_CONFIG.MAX_DEPOSIT_AMOUNT;
-  const hassufficientBalance = amountNum > 0 && amountNum <= balance;
-  const hassufficientAllowance = amountNum > 0 && amountNum <= allowance;
+  const hasSufficientBalance = amountNum > 0 && amountNum <= balance;
+  const hasSufficientAllowance = amountNum > 0 && amountNum <= allowance;
   const canApprove = isConnected && selectedAsset && isAmountValid && hasSufficientBalance;
   const canDeposit = canApprove && hasSufficientAllowance;
 

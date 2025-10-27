@@ -1,10 +1,11 @@
 'use client';
 
-import { Box, Card, CardContent, Typography, Button, Alert, CircularProgress, Link as MuiLink } from '@mui/material';
+import { Box, CardContent, Typography, Button, Alert, CircularProgress, Link as MuiLink } from '@mui/material';
 import { Casino, CheckCircle } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/useWindowSize';
+import { StyledCard } from '@/components/common';
 import { DiceAnimation } from './DiceAnimation';
 import { DiceTypeDisplay } from './DiceTypeDisplay';
 import { RollCooldownTimer } from './RollCooldownTimer';
@@ -75,7 +76,7 @@ export function DiceRoller() {
           <DiceTypeDisplay type={diceType} />
 
           {/* Dice Animation */}
-          <Card sx={{ mt: 3, mb: 3, boxShadow: 3 }}>
+          <StyledCard variant="white" sx={{ mt: 3, mb: 3 }}>
             <CardContent>
               <DiceAnimation
                 type={diceType}
@@ -83,7 +84,7 @@ export function DiceRoller() {
                 isRolling={isRolling}
               />
             </CardContent>
-          </Card>
+          </StyledCard>
 
           {/* Cooldown Timer */}
           {diceData && diceData.lastRollTimestamp > 0 && (
@@ -115,7 +116,7 @@ export function DiceRoller() {
 
           {/* Result Display */}
           {rollResult && (
-            <Card sx={{ mt: 3, background: 'linear-gradient(135deg, #FFF9E6 0%, #FFE8CC 100%)', boxShadow: 3 }}>
+            <StyledCard variant="accent" sx={{ mt: 3 }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                   <CheckCircle color="success" sx={{ fontSize: '32px' }} />
@@ -140,7 +141,7 @@ export function DiceRoller() {
                   </Typography>
                 )}
               </CardContent>
-            </Card>
+            </StyledCard>
           )}
 
           {/* Transaction Hash */}
@@ -161,7 +162,7 @@ export function DiceRoller() {
 
           {/* Dice Stats */}
           {diceData && (
-            <Card sx={{ mt: 3, boxShadow: 2 }}>
+            <StyledCard variant="white" sx={{ mt: 3 }}>
               <CardContent>
                 <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                   Your Dice Stats
@@ -201,7 +202,7 @@ export function DiceRoller() {
                   </Box>
                 </Box>
               </CardContent>
-            </Card>
+            </StyledCard>
           )}
         </>
       )}

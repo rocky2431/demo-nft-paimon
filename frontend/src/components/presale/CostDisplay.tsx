@@ -1,6 +1,7 @@
 'use client';
 
-import { Box, Card, CardContent, Typography, Divider } from '@mui/material';
+import { Box, CardContent, Typography, Divider } from '@mui/material';
+import { StyledCard } from '@/components/common';
 import { MINT_CONFIG, BOND_PARAMS } from './constants';
 import type { CostCalculation } from './types';
 
@@ -17,50 +18,44 @@ export function CostDisplay({ calculation, userBalance }: CostDisplayProps) {
   const hasInsufficientBalance = userBalance && parseFloat(userBalance) < calculation.totalCost;
 
   return (
-    <Card
-      sx={{
-        bgcolor: '#FFF3E0', // Warm cream background
-        borderRadius: 2,
-        boxShadow: '0 4px 12px rgba(255, 140, 0, 0.15)',
-      }}
-    >
+    <StyledCard variant="accent">
       <CardContent>
-        <Typography variant="h6" sx={{ color: '#D17A00', mb: 2 }}>
+        <Typography variant="h6" sx={{ color: 'rgba(0, 0, 0, 0.85)', mb: 2, fontWeight: 700 }}>
           Cost Breakdown
         </Typography>
 
         {/* Price per NFT */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body1" sx={{ color: '#8B4000' }}>
+          <Typography variant="body1" sx={{ color: 'rgba(0, 0, 0, 0.7)', fontWeight: 600 }}>
             Price per NFT:
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#8B4000' }}>
+          <Typography variant="body1" sx={{ fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)' }}>
             {MINT_CONFIG.NFT_PRICE} USDC
           </Typography>
         </Box>
 
         {/* Quantity */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body1" sx={{ color: '#8B4000' }}>
+          <Typography variant="body1" sx={{ color: 'rgba(0, 0, 0, 0.7)', fontWeight: 600 }}>
             Quantity:
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#8B4000' }}>
+          <Typography variant="body1" sx={{ fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)' }}>
             × {calculation.quantity}
           </Typography>
         </Box>
 
-        <Divider sx={{ my: 2, borderColor: '#FFB74D' }} />
+        <Divider sx={{ my: 2, borderColor: 'rgba(0, 0, 0, 0.15)' }} />
 
         {/* Total Cost */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6" sx={{ color: '#D17A00' }}>
+          <Typography variant="h6" sx={{ color: 'rgba(0, 0, 0, 0.85)', fontWeight: 700 }}>
             Total Cost:
           </Typography>
           <Typography
             variant="h6"
             sx={{
-              fontWeight: 'bold',
-              color: hasInsufficientBalance ? '#D32F2F' : '#FF8C00',
+              fontWeight: 700,
+              color: hasInsufficientBalance ? '#D32F2F' : 'rgba(255, 255, 255, 0.95)',
             }}
           >
             {calculation.formattedCost} USDC
@@ -70,16 +65,16 @@ export function CostDisplay({ calculation, userBalance }: CostDisplayProps) {
         {/* User Balance */}
         {userBalance && (
           <>
-            <Divider sx={{ my: 2, borderColor: '#FFB74D' }} />
+            <Divider sx={{ my: 2, borderColor: 'rgba(0, 0, 0, 0.15)' }} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ color: '#A0522D' }}>
+              <Typography variant="body1" sx={{ color: 'rgba(0, 0, 0, 0.7)', fontWeight: 600 }}>
                 Your USDC Balance:
               </Typography>
               <Typography
-                variant="body2"
+                variant="body1"
                 sx={{
-                  fontWeight: 'bold',
-                  color: hasInsufficientBalance ? '#D32F2F' : '#2E7D32',
+                  fontWeight: 700,
+                  color: hasInsufficientBalance ? '#D32F2F' : 'rgba(255, 255, 255, 0.95)',
                 }}
               >
                 {parseFloat(userBalance).toLocaleString('en-US', {
@@ -123,6 +118,6 @@ export function CostDisplay({ calculation, userBalance }: CostDisplayProps) {
           Each NFT matures in {BOND_PARAMS.MATURITY_DAYS} days with guaranteed yield
         </Typography>
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 }

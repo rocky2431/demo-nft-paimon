@@ -11,7 +11,6 @@ import {
   Typography,
   Grid,
   Button,
-  Card,
   CardContent,
   Alert,
   CircularProgress,
@@ -21,11 +20,12 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useAccount } from 'wagmi';
+import { StyledCard } from '@/components/common';
 import { useUserPositions } from './hooks/useUserPositions';
 import { useInterval } from './hooks/useInterval';
 import { PositionCard } from './PositionCard';
 import { HealthFactorGauge } from './HealthFactorGauge';
-import { TREASURY_THEME, TREASURY_CARD_STYLES } from './constants';
+import { TREASURY_THEME } from './constants';
 
 const AUTO_REFRESH_INTERVAL = 60000; // 60 seconds
 
@@ -123,9 +123,9 @@ export function PositionList() {
   // Empty state
   if (positions.length === 0) {
     return (
-      <Card
+      <StyledCard
+        variant="white"
         sx={{
-          ...TREASURY_CARD_STYLES.primary,
           textAlign: 'center',
           py: 6,
         }}
@@ -152,7 +152,7 @@ export function PositionList() {
             Deposit RWA Collateral
           </Button>
         </CardContent>
-      </Card>
+      </StyledCard>
     );
   }
 
@@ -215,7 +215,7 @@ export function PositionList() {
       </Box>
 
       {/* Overall stats summary */}
-      <Card sx={{ ...TREASURY_CARD_STYLES.primary, mb: 3 }}>
+      <StyledCard variant="white" sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: TREASURY_THEME.TITLE }}>
             Portfolio Overview
@@ -266,7 +266,7 @@ export function PositionList() {
             )}
           </Box>
         </CardContent>
-      </Card>
+      </StyledCard>
 
       {/* Position cards grid */}
       <Grid container spacing={3}>

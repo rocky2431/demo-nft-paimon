@@ -7,7 +7,6 @@
 
 import { useState } from 'react';
 import {
-  Card,
   CardContent,
   Box,
   Typography,
@@ -28,9 +27,10 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { formatUnits } from 'viem';
+import { StyledCard } from '@/components/common';
 import { PositionWithMetadata } from './hooks/useUserPositions';
 import { HealthFactorGauge, getHealthFactorStatus } from './HealthFactorGauge';
-import { TREASURY_THEME, TREASURY_CARD_STYLES } from './constants';
+import { TREASURY_THEME } from './constants';
 
 interface PositionCardProps {
   position: PositionWithMetadata;
@@ -112,9 +112,10 @@ export function PositionCard({ position, onRedeem, onAddCollateral }: PositionCa
 
   return (
     <>
-      <Card
+      <StyledCard
+        variant="white"
+        hoverLift
         sx={{
-          ...TREASURY_CARD_STYLES.primary,
           ...(isAtRisk && {
             border: `1px solid ${hfStatus.color}`,
             boxShadow: `0 4px 12px ${hfStatus.color}40`,
@@ -236,7 +237,7 @@ export function PositionCard({ position, onRedeem, onAddCollateral }: PositionCa
             </Button>
           </Stack>
         </CardContent>
-      </Card>
+      </StyledCard>
 
       {/* Redeem Dialog */}
       <Dialog open={redeemDialogOpen} onClose={() => setRedeemDialogOpen(false)} maxWidth="sm" fullWidth>

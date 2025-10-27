@@ -41,7 +41,7 @@ export function QuantitySelector({ quantity, onChange, disabled = false }: Quant
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
-      <Typography variant="h6" gutterBottom sx={{ color: '#D17A00' }}>
+      <Typography variant="h6" gutterBottom sx={{ color: '#D17A00', fontWeight: 700 }}>
         Select Quantity
       </Typography>
 

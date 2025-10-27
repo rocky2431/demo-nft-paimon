@@ -59,7 +59,7 @@ export function HYDMintPreview({ preview, isLoading }: HYDMintPreviewProps) {
   const hfStatus = getHealthFactorStatus(preview.healthFactor);
 
   return (
-    <StyledCard sx={variant="accent"}>
+    <StyledCard variant="accent">
       <CardContent>
         <Typography
           variant="h6"
