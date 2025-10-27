@@ -644,6 +644,57 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         }
     }
 
+    // ==================== RWA-009: Liquidation Module ====================
+
+    /**
+     * @notice Check if a position is liquidatable
+     * @param user User address
+     * @param asset RWA asset address
+     * @return True if position can be liquidated
+     */
+    function isLiquidatable(address user, address asset) public view returns (bool) {
+        // TODO: Implement in GREEN phase
+        return false;
+    }
+
+    /**
+     * @notice Get liquidation information for a position
+     * @param user User address
+     * @param asset RWA asset address
+     * @return isLiquidatable Whether position is liquidatable
+     * @return healthFactor Current health factor
+     * @return maxLiquidatable Maximum amount that can be liquidated
+     * @return penalty Liquidation penalty amount
+     */
+    function getLiquidationInfo(address user, address asset)
+        external
+        view
+        returns (
+            bool isLiquidatable,
+            uint256 healthFactor,
+            uint256 maxLiquidatable,
+            uint256 penalty
+        )
+    {
+        // TODO: Implement in GREEN phase
+        return (false, 0, 0, 0);
+    }
+
+    /**
+     * @notice Liquidate an undercollateralized position
+     * @param user User to liquidate
+     * @param asset RWA asset address
+     * @param hydAmount Amount of HYD debt to repay
+     */
+    function liquidate(address user, address asset, uint256 hydAmount)
+        external
+        whenNotPaused
+        nonReentrant
+    {
+        // TODO: Implement in GREEN phase
+        revert("Not implemented");
+    }
+
     // ==================== PRESALE-008: Bond NFT Settlement Integration ====================
 
     /**
