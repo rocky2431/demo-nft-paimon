@@ -12,8 +12,8 @@
   },
   "stats": {
     "total": 63,
-    "pending": 18,
-    "in_progress": 0,
+    "pending": 17,
+    "in_progress": 1,
     "review": 1,
     "blocked": 0,
     "completed": 44,
@@ -1700,7 +1700,8 @@
       "priority": "P1",
       "complexity": 2,
       "estimated_days": 2,
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2025-10-28T12:30:00Z",
       "tags": [
         "documentation",
         "audit"
