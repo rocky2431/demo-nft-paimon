@@ -12,8 +12,8 @@
   },
   "stats": {
     "total": 63,
-    "pending": 19,
-    "in_progress": 0,
+    "pending": 18,
+    "in_progress": 1,
     "review": 1,
     "blocked": 0,
     "completed": 43,
@@ -1671,7 +1671,8 @@
       "priority": "P1",
       "complexity": 3,
       "estimated_days": 4,
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2025-10-28T11:00:00Z",
       "tags": [
         "optimization",
         "code-quality"
