@@ -272,7 +272,7 @@ export function VoteExecutionPanel({ project }: VoteExecutionPanelProps) {
           >
             <Typography variant="caption">
               The vote execution threshold has not been met yet. Continue voting to
-              reach >50% of total voting power for either approve or reject.
+              reach {'>'}50% of total voting power for either approve or reject.
             </Typography>
           </Alert>
         )}

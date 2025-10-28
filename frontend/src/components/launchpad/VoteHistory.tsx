@@ -102,7 +102,7 @@ export function VoteHistory({ userAddress }: VoteHistoryProps) {
               No Voting History
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              You haven't cast any votes yet
+              You haven&apos;t cast any votes yet
             </Typography>
           </Box>
         </CardContent>

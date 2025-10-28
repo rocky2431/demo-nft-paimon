@@ -36,17 +36,17 @@ export function ComplianceDocViewer({
     {
       name: 'Offering Memorandum',
       uri: complianceDocURI,
-      type: 'offering_memo',
+      type: 'offering_memo' as const,
     },
     {
       name: 'Asset Audit Report',
       uri: auditReportURI,
-      type: 'audit_report',
+      type: 'audit_report' as const,
     },
     {
       name: 'Risk Disclosure',
       uri: disclosureURI,
-      type: 'risk_disclosure',
+      type: 'risk_disclosure' as const,
     },
   ].filter((doc) => doc.uri && doc.uri !== '');
 

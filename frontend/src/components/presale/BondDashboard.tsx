@@ -137,7 +137,7 @@ export function BondDashboard() {
           No Bonds Found
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          You don't have any Bond NFTs yet. Mint your first bond to get started!
+          You don&apos;t have any Bond NFTs yet. Mint your first bond to get started!
         </Typography>
       </Box>
     );

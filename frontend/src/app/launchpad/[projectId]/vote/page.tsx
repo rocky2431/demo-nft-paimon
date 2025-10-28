@@ -92,7 +92,7 @@ export default function VotingPage({
         <Container maxWidth="xl" sx={{ py: 4 }}>
           <Alert severity="warning">
             This project is not in voting phase. Voting is only available for projects
-            with status "Voting".
+            with status &quot;Voting&quot;.
           </Alert>
           <Box display="flex" gap={2} mt={2}>
             <Button
@@ -206,7 +206,7 @@ export default function VotingPage({
             • Each veNFT can only vote once per project (approve or reject)
           </Typography>
           <Typography variant="caption" component="div" mb={0.5}>
-            • A project is approved if it receives >50% of total voting power in approve
+            • A project is approved if it receives {'>'}50% of total voting power in approve
             votes
           </Typography>
           <Typography variant="caption" component="div">

@@ -185,7 +185,7 @@ export function TaskProgressBar({ progress }: TaskProgressBarProps) {
               fontWeight: 700,
             }}
           >
-            All tasks completed! You've unlocked all dice types!
+            All tasks completed! You&apos;ve unlocked all dice types!
           </Typography>
         </Box>
       )}

@@ -135,7 +135,7 @@ export function PositionList() {
             No Treasury Positions Found
           </Typography>
           <Typography variant="body2" sx={{ mb: 3, color: TREASURY_THEME.SUBTITLE }}>
-            You haven't deposited any RWA collateral yet. Visit the Deposit page to get started.
+            You haven&apos;t deposited any RWA collateral yet. Visit the Deposit page to get started.
           </Typography>
           <Button
             variant="contained"

@@ -170,7 +170,7 @@ export function ConfirmationModal({
                   A new veNFT will be created with a {veNFTOption?.lockDurationMonths}-month lock
                 </Typography>
                 <Typography component="li" variant="body2" color="text.secondary">
-                  You'll earn protocol fees and bribes during the lock period
+                  You&apos;ll earn protocol fees and bribes during the lock period
                 </Typography>
               </>
             ) : (
@@ -182,7 +182,7 @@ export function ConfirmationModal({
                   Treasury will transfer {cashOption?.totalAmount.toFixed(2)} USDC to your wallet
                 </Typography>
                 <Typography component="li" variant="body2" color="text.secondary">
-                  You'll have full control and liquidity of your funds
+                  You&apos;ll have full control and liquidity of your funds
                 </Typography>
               </>
             )}

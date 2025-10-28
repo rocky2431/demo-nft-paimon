@@ -13,8 +13,16 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SavingsIcon from '@mui/icons-material/Savings';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
+import LockIcon from '@mui/icons-material/Lock';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
 
-export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale' | 'treasury';
+export type NavPage = 'swap' | 'liquidity' | 'lock' | 'vote' | 'presale' | 'treasury' | 'launchpad' | 'analytics' | 'bribes' | 'rewards';
 
 interface NavigationProps {
   /**
@@ -35,6 +43,31 @@ interface NavigationProps {
  * - OlympusDAO-inspired design
  */
 export function Navigation({ activePage }: NavigationProps) {
+  // Liquidity dropdown
+  const [liquidityAnchorEl, setLiquidityAnchorEl] = useState<null | HTMLElement>(null);
+  const liquidityMenuOpen = Boolean(liquidityAnchorEl);
+
+  const handleLiquidityClick = (event: React.MouseEvent<HTMLElement>) => {
+    setLiquidityAnchorEl(event.currentTarget);
+  };
+
+  const handleLiquidityClose = () => {
+    setLiquidityAnchorEl(null);
+  };
+
+  // Launchpad dropdown
+  const [launchpadAnchorEl, setLaunchpadAnchorEl] = useState<null | HTMLElement>(null);
+  const launchpadMenuOpen = Boolean(launchpadAnchorEl);
+
+  const handleLaunchpadClick = (event: React.MouseEvent<HTMLElement>) => {
+    setLaunchpadAnchorEl(event.currentTarget);
+  };
+
+  const handleLaunchpadClose = () => {
+    setLaunchpadAnchorEl(null);
+  };
+
+  // Presale dropdown
   const [presaleAnchorEl, setPresaleAnchorEl] = useState<null | HTMLElement>(null);
   const presaleMenuOpen = Boolean(presaleAnchorEl);
 
@@ -46,6 +79,7 @@ export function Navigation({ activePage }: NavigationProps) {
     setPresaleAnchorEl(null);
   };
 
+  // Treasury dropdown
   const [treasuryAnchorEl, setTreasuryAnchorEl] = useState<null | HTMLElement>(null);
   const treasuryMenuOpen = Boolean(treasuryAnchorEl);
 
@@ -111,13 +145,20 @@ export function Navigation({ activePage }: NavigationProps) {
               </Typography>
             </Link>
 
-            <Link href="/liquidity/add" style={{ textDecoration: 'none' }}>
+            {/* Liquidity Dropdown */}
+            <Box
+              onClick={handleLiquidityClick}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
               <Typography
                 variant="body1"
                 fontWeight={600}
                 sx={{
                   color: activePage === 'liquidity' ? 'primary.main' : 'text.secondary',
-                  cursor: 'pointer',
                   transition: 'color 0.3s',
                   whiteSpace: 'nowrap',
                   '&:hover': {
@@ -127,7 +168,80 @@ export function Navigation({ activePage }: NavigationProps) {
               >
                 Liquidity
               </Typography>
-            </Link>
+              <ArrowDropDownIcon
+                sx={{
+                  color: activePage === 'liquidity' ? 'primary.main' : 'text.secondary',
+                  transition: 'transform 0.3s',
+                  transform: liquidityMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </Box>
+
+            <Menu
+              anchorEl={liquidityAnchorEl}
+              open={liquidityMenuOpen}
+              onClose={handleLiquidityClose}
+              disableScrollLock
+              sx={{
+                '& .MuiPaper-root': {
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                  mt: 1,
+                },
+              }}
+            >
+              <MenuItem
+                component={Link}
+                href="/liquidity/add"
+                onClick={handleLiquidityClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <AddCircleIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Add Liquidity
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                href="/liquidity/remove"
+                onClick={handleLiquidityClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <RemoveCircleIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Remove Liquidity
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                href="/liquidity/stake"
+                onClick={handleLiquidityClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <LockIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Stake LP
+                </Typography>
+              </MenuItem>
+            </Menu>
 
             <Link href="/lock" style={{ textDecoration: 'none' }}>
               <Typography
@@ -164,6 +278,87 @@ export function Navigation({ activePage }: NavigationProps) {
                 Vote
               </Typography>
             </Link>
+
+            {/* Launchpad Dropdown */}
+            <Box
+              onClick={handleLaunchpadClick}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Typography
+                variant="body1"
+                fontWeight={600}
+                sx={{
+                  color: activePage === 'launchpad' ? 'primary.main' : 'text.secondary',
+                  transition: 'color 0.3s',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Launchpad
+              </Typography>
+              <ArrowDropDownIcon
+                sx={{
+                  color: activePage === 'launchpad' ? 'primary.main' : 'text.secondary',
+                  transition: 'transform 0.3s',
+                  transform: launchpadMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </Box>
+
+            <Menu
+              anchorEl={launchpadAnchorEl}
+              open={launchpadMenuOpen}
+              onClose={handleLaunchpadClose}
+              disableScrollLock
+              sx={{
+                '& .MuiPaper-root': {
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                  mt: 1,
+                },
+              }}
+            >
+              <MenuItem
+                component={Link}
+                href="/launchpad"
+                onClick={handleLaunchpadClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <RocketLaunchIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  Project List
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                href="/launchpad?filter=participated"
+                onClick={handleLaunchpadClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+                  },
+                }}
+              >
+                <VerifiedIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  My Participations
+                </Typography>
+              </MenuItem>
+            </Menu>
 
             {/* Treasury Dropdown */}
             <Box
@@ -377,6 +572,63 @@ export function Navigation({ activePage }: NavigationProps) {
                 </Typography>
               </MenuItem>
             </Menu>
+
+            {/* Analytics */}
+            <Link href="/analytics" style={{ textDecoration: 'none' }}>
+              <Typography
+                variant="body1"
+                fontWeight={600}
+                sx={{
+                  color: activePage === 'analytics' ? 'primary.main' : 'text.secondary',
+                  cursor: 'pointer',
+                  transition: 'color 0.3s',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Analytics
+              </Typography>
+            </Link>
+
+            {/* Bribes */}
+            <Link href="/bribes" style={{ textDecoration: 'none' }}>
+              <Typography
+                variant="body1"
+                fontWeight={600}
+                sx={{
+                  color: activePage === 'bribes' ? 'primary.main' : 'text.secondary',
+                  cursor: 'pointer',
+                  transition: 'color 0.3s',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Bribes
+              </Typography>
+            </Link>
+
+            {/* Rewards */}
+            <Link href="/rewards" style={{ textDecoration: 'none' }}>
+              <Typography
+                variant="body1"
+                fontWeight={600}
+                sx={{
+                  color: activePage === 'rewards' ? 'primary.main' : 'text.secondary',
+                  cursor: 'pointer',
+                  transition: 'color 0.3s',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Rewards
+              </Typography>
+            </Link>
           </Stack>
 
           {/* Spacer - pushes wallet button to far right */}
