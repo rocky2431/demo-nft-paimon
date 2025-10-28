@@ -30,7 +30,8 @@ interface IPyth {
         uint256 publishTime;
     }
 
-    function getPrice(bytes32 id) external view returns (Price memory price);
+    function getPrice(bytes32 id) external view returns (Price memory price); // Deprecated
+    function getPriceUnsafe(bytes32 id) external view returns (Price memory price);
     function getPriceNoOlderThan(bytes32 id, uint256 age) external view returns (Price memory price);
 }
 
@@ -326,7 +327,7 @@ contract PriceOracle is Ownable, ReentrancyGuard {
      * @return price Price normalized to 8 decimals
      */
     function _getPythPrice(bytes32 feedId, uint256 stalenessThreshold_) internal view returns (bool success, uint256 price) {
-        try pyth.getPrice(feedId) returns (IPyth.Price memory pythPrice) {
+        try pyth.getPriceUnsafe(feedId) returns (IPyth.Price memory pythPrice) {
             // Validate price
             if (pythPrice.price <= 0) {
                 return (false, 0);
@@ -335,6 +336,14 @@ contract PriceOracle is Ownable, ReentrancyGuard {
             // Check staleness
             if (block.timestamp > pythPrice.publishTime + stalenessThreshold_) {
                 return (false, 0);
+            }
+
+            // Check confidence level (< 1% of price)
+            // conf and price are both in the same units, so we can compare directly
+            uint256 absPrice = pythPrice.price > 0 ? uint256(uint64(pythPrice.price)) : uint256(uint64(-pythPrice.price));
+            uint256 maxConfidence = absPrice / 100; // 1% threshold
+            if (pythPrice.conf > maxConfidence) {
+                return (false, 0); // Price confidence too low
             }
 
             // Convert Pyth price (int64 with expo) to uint256 with 8 decimals

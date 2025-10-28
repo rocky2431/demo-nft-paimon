@@ -69,8 +69,8 @@ contract VerifyMultiSig is Script {
         console2.log("========================================");
         console2.log("Verification Complete");
         console2.log("========================================");
-        console2.log("Treasury Multi-Sig:  ", TREASURY_MULTISIG, "✅");
-        console2.log("Emergency Multi-Sig: ", EMERGENCY_MULTISIG, "✅");
+        console2.log("Treasury Multi-Sig:  ", TREASURY_MULTISIG, "[OK]");
+        console2.log("Emergency Multi-Sig: ", EMERGENCY_MULTISIG, "[OK]");
         console2.log("");
         console2.log("Next Steps:");
         console2.log("1. Fund Safes with test amount (0.001 BNB each)");
@@ -91,34 +91,38 @@ contract VerifyMultiSig is Script {
 
         // Check threshold
         uint256 threshold = safe.getThreshold();
-        console2.log("   Threshold:", threshold, "(expected:", EXPECTED_TREASURY_THRESHOLD, ")");
+        console2.log("   Threshold:", threshold);
+        console2.log("   Expected:", EXPECTED_TREASURY_THRESHOLD);
         require(threshold == EXPECTED_TREASURY_THRESHOLD, "VerifyMultiSig: Incorrect Treasury threshold");
-        console2.log("   ✅ Threshold correct");
+        console2.log("   [OK] Threshold correct");
 
         // Check owner count
         address[] memory owners = safe.getOwners();
-        console2.log("   Owners:", owners.length, "(expected:", EXPECTED_TREASURY_OWNERS, ")");
+        console2.log("   Owners:", owners.length);
+        console2.log("   Expected:", EXPECTED_TREASURY_OWNERS);
         require(owners.length == EXPECTED_TREASURY_OWNERS, "VerifyMultiSig: Incorrect Treasury owner count");
-        console2.log("   ✅ Owner count correct");
+        console2.log("   [OK] Owner count correct");
 
         // List all owners
         console2.log("   Owner addresses:");
         for (uint256 i = 0; i < owners.length; i++) {
             require(owners[i] != address(0), "VerifyMultiSig: Zero address owner");
             require(safe.isOwner(owners[i]), "VerifyMultiSig: Owner verification failed");
-            console2.log("     [", i + 1, "]", owners[i]);
+            console2.log("     Owner", i + 1);
+            console2.log("     Address:", owners[i]);
         }
-        console2.log("   ✅ All owners verified");
+        console2.log("   [OK] All owners verified");
 
         // Check balance
         uint256 balance = address(TREASURY_MULTISIG).balance;
-        console2.log("   Balance:", balance, "wei (", balance / 1e18, "BNB )");
+        console2.log("   Balance (wei):", balance);
+        console2.log("   Balance (BNB):", balance / 1e18);
 
         if (balance < TEST_AMOUNT) {
-            console2.log("   ⚠️  Warning: Insufficient balance for test transaction");
+            console2.log("   [WARNING]  Warning: Insufficient balance for test transaction");
             console2.log("      Please fund Safe with at least", TEST_AMOUNT, "wei");
         } else {
-            console2.log("   ✅ Sufficient balance for testing");
+            console2.log("   [OK] Sufficient balance for testing");
         }
     }
 
@@ -131,34 +135,38 @@ contract VerifyMultiSig is Script {
 
         // Check threshold
         uint256 threshold = safe.getThreshold();
-        console2.log("   Threshold:", threshold, "(expected:", EXPECTED_EMERGENCY_THRESHOLD, ")");
+        console2.log("   Threshold:", threshold);
+        console2.log("   Expected:", EXPECTED_EMERGENCY_THRESHOLD);
         require(threshold == EXPECTED_EMERGENCY_THRESHOLD, "VerifyMultiSig: Incorrect Emergency threshold");
-        console2.log("   ✅ Threshold correct");
+        console2.log("   [OK] Threshold correct");
 
         // Check owner count
         address[] memory owners = safe.getOwners();
-        console2.log("   Owners:", owners.length, "(expected:", EXPECTED_EMERGENCY_OWNERS, ")");
+        console2.log("   Owners:", owners.length);
+        console2.log("   Expected:", EXPECTED_EMERGENCY_OWNERS);
         require(owners.length == EXPECTED_EMERGENCY_OWNERS, "VerifyMultiSig: Incorrect Emergency owner count");
-        console2.log("   ✅ Owner count correct");
+        console2.log("   [OK] Owner count correct");
 
         // List all owners
         console2.log("   Owner addresses:");
         for (uint256 i = 0; i < owners.length; i++) {
             require(owners[i] != address(0), "VerifyMultiSig: Zero address owner");
             require(safe.isOwner(owners[i]), "VerifyMultiSig: Owner verification failed");
-            console2.log("     [", i + 1, "]", owners[i]);
+            console2.log("     Owner", i + 1);
+            console2.log("     Address:", owners[i]);
         }
-        console2.log("   ✅ All owners verified");
+        console2.log("   [OK] All owners verified");
 
         // Check balance
         uint256 balance = address(EMERGENCY_MULTISIG).balance;
-        console2.log("   Balance:", balance, "wei (", balance / 1e18, "BNB )");
+        console2.log("   Balance (wei):", balance);
+        console2.log("   Balance (BNB):", balance / 1e18);
 
         if (balance < TEST_AMOUNT) {
-            console2.log("   ⚠️  Warning: Insufficient balance for test transaction");
+            console2.log("   [WARNING]  Warning: Insufficient balance for test transaction");
             console2.log("      Please fund Safe with at least", TEST_AMOUNT, "wei");
         } else {
-            console2.log("   ✅ Sufficient balance for testing");
+            console2.log("   [OK] Sufficient balance for testing");
         }
     }
 }
@@ -200,11 +208,11 @@ contract TestMultiSigTransaction is Script {
         console2.log("1. Funding Safes with test amount...");
         (bool success1,) = TREASURY_MULTISIG.call{value: 0.01 ether}("");
         require(success1, "Failed to fund Treasury Multi-Sig");
-        console2.log("   ✅ Treasury Multi-Sig funded with 0.01 BNB");
+        console2.log("   [OK] Treasury Multi-Sig funded with 0.01 BNB");
 
         (bool success2,) = EMERGENCY_MULTISIG.call{value: 0.01 ether}("");
         require(success2, "Failed to fund Emergency Multi-Sig");
-        console2.log("   ✅ Emergency Multi-Sig funded with 0.01 BNB");
+        console2.log("   [OK] Emergency Multi-Sig funded with 0.01 BNB");
         console2.log("");
 
         vm.stopBroadcast();
