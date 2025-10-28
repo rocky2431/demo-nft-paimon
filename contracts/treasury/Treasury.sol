@@ -427,12 +427,10 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         IRWAPriceOracle oracle = IRWAPriceOracle(tier.oracle);
         uint256 rwaPrice = oracle.getPrice();
 
-        // Calculate RWA value in USD (18 decimals)
-        uint256 rwaValue = (amount * rwaPrice) / 1e18;
-
         // Calculate HYD to mint: (rwaValue * ltvRatio * (10000 - mintDiscount)) / 10000^2
-        uint256 hydToMint = (rwaValue * tier.ltvRatio * (BPS_DENOMINATOR - tier.mintDiscount))
-            / (BPS_DENOMINATOR * BPS_DENOMINATOR);
+        // @audit-fix: Avoid divide-before-multiply precision loss
+        uint256 hydToMint = (amount * rwaPrice * tier.ltvRatio * (BPS_DENOMINATOR - tier.mintDiscount))
+            / (1e18 * BPS_DENOMINATOR * BPS_DENOMINATOR);
 
         // Transfer RWA from user to Treasury
         IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
@@ -474,6 +472,7 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
      *          fee = 10 * 0.50% = 0.05 RWA
      *          userReceives = 10 - 0.05 = 9.95 RWA
      *          treasuryKeeps = 0.05 RWA
+     * @dev Slither reentrancy warning is false positive - function protected by nonReentrant modifier
      */
     function redeemRWA(address asset, uint256 amount)
         external
@@ -725,11 +724,11 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
             maxLiquidatable = position.hydMinted;
 
             // Calculate penalty: (rwaAmount * price * LIQUIDATION_PENALTY) / BPS_DENOMINATOR
+            // @audit-fix: Avoid divide-before-multiply precision loss
             RWATier memory tier = rwaAssets[asset];
             IRWAPriceOracle oracle = IRWAPriceOracle(tier.oracle);
             uint256 price = oracle.getPrice();
-            uint256 rwaValue = (position.rwaAmount * price) / 1e18;
-            penalty = (rwaValue * LIQUIDATION_PENALTY) / BPS_DENOMINATOR;
+            penalty = (position.rwaAmount * price * LIQUIDATION_PENALTY) / (1e18 * BPS_DENOMINATOR);
         }
 
         return (_isLiquidatable, healthFactor, maxLiquidatable, penalty);
@@ -740,6 +739,7 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
      * @param user User to liquidate
      * @param asset RWA asset address
      * @param hydAmount Amount of HYD debt to repay
+     * @dev Slither reentrancy warning is false positive - function protected by nonReentrant modifier
      */
     function liquidate(address user, address asset, uint256 hydAmount)
         external
@@ -763,7 +763,6 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         uint256 actualHydAmount;
         if (hydAmount < position.hydMinted) {
             // Partial liquidation: calculate required amount to restore to TARGET_HEALTH_FACTOR (125%)
-            uint256 collateralValue = (position.rwaAmount * price) / 1e18;
             uint256 debtValue = position.hydMinted;
 
             // Mathematical derivation:
@@ -773,7 +772,8 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
             // To avoid decimals, multiply by 100:
             // numerator = 125 * D - 100 * C
             // denominator = 20
-            uint256 numerator = (125 * debtValue) - (100 * collateralValue);
+            // @audit-fix: Avoid divide-before-multiply precision loss
+            uint256 numerator = (125 * debtValue) - (100 * position.rwaAmount * price / 1e18);
             uint256 requiredHydAmount = numerator / 20;
 
             // Use the required amount (ignore user's hydAmount for partial liquidation)
@@ -787,8 +787,9 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         uint256 baseRWA = (actualHydAmount * 1e18) / price;
 
         // Calculate penalty distribution
-        uint256 liquidatorBonus = (baseRWA * LIQUIDATOR_SHARE) / BPS_DENOMINATOR;  // 4%
-        uint256 protocolFee = (baseRWA * PROTOCOL_SHARE) / BPS_DENOMINATOR;  // 1%
+        // @audit-fix: Avoid divide-before-multiply precision loss
+        uint256 liquidatorBonus = (actualHydAmount * 1e18 * LIQUIDATOR_SHARE) / (price * BPS_DENOMINATOR);  // 4%
+        uint256 protocolFee = (actualHydAmount * 1e18 * PROTOCOL_SHARE) / (price * BPS_DENOMINATOR);  // 1%
 
         // Total RWA to deduct from position = base + 5% penalty
         uint256 totalDeducted = baseRWA + liquidatorBonus + protocolFee;
@@ -798,12 +799,13 @@ contract Treasury is Ownable2Step, Pausable, ReentrancyGuard {
         // maxRWA = position.rwaAmount / 1.05
         if (totalDeducted > position.rwaAmount) {
             // Calculate max base RWA we can seize (accounting for 5% penalty)
+            // @audit-fix: Avoid divide-before-multiply precision loss
             baseRWA = (position.rwaAmount * BPS_DENOMINATOR) / (BPS_DENOMINATOR + LIQUIDATION_PENALTY);
-            actualHydAmount = (baseRWA * price) / 1e18;
+            actualHydAmount = (position.rwaAmount * BPS_DENOMINATOR * price) / ((BPS_DENOMINATOR + LIQUIDATION_PENALTY) * 1e18);
 
             // Recalculate penalty distribution
-            liquidatorBonus = (baseRWA * LIQUIDATOR_SHARE) / BPS_DENOMINATOR;
-            protocolFee = (baseRWA * PROTOCOL_SHARE) / BPS_DENOMINATOR;
+            liquidatorBonus = (position.rwaAmount * BPS_DENOMINATOR * LIQUIDATOR_SHARE) / ((BPS_DENOMINATOR + LIQUIDATION_PENALTY) * BPS_DENOMINATOR);
+            protocolFee = (position.rwaAmount * BPS_DENOMINATOR * PROTOCOL_SHARE) / ((BPS_DENOMINATOR + LIQUIDATION_PENALTY) * BPS_DENOMINATOR);
             totalDeducted = baseRWA + liquidatorBonus + protocolFee;
         }
 

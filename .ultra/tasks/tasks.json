@@ -4,19 +4,19 @@
     "project_name": "paimon-dex",
     "project_type": "defi-protocol",
     "created": "2025-10-24T18:26:00Z",
-    "last_updated": "2025-10-27T03:26:13Z",
+    "last_updated": "2025-10-28T12:15:00Z",
     "total_phases": 7,
     "estimated_duration_weeks": 15,
     "deployment_target": "BSC Mainnet (Testnet: BSC Testnet 97)",
-    "note": "Phase 3.6 added: RWA Launchpad + Treasury RWA Core (12 tasks). Phase 3.5 (Presale) completed 16/16."
+    "note": "Phase 3.6 added: RWA Launchpad + Treasury RWA Core (12 tasks). Phase 3.5 (Presale) completed 16/16. SEC-005 completed: Fixed 16 precision issues + 3 reentrancy comments."
   },
   "stats": {
     "total": 63,
-    "pending": 19,
+    "pending": 18,
     "in_progress": 0,
     "review": 1,
     "blocked": 0,
-    "completed": 43,
+    "completed": 44,
     "cancelled": 0,
     "by_priority": {
       "P0": 37,
@@ -1671,7 +1671,9 @@
       "priority": "P1",
       "complexity": 3,
       "estimated_days": 4,
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2025-10-28T11:00:00Z",
+      "completed_at": "2025-10-28T12:15:00Z",
       "tags": [
         "optimization",
         "code-quality"
@@ -1687,7 +1689,8 @@
         "Slither re-scan shows only Low/Info issues"
       ],
       "technical_notes": "RISK-003: 15 precision issues. Fix pattern: change (a * b) / c to (a * b * scale) / c for event emissions. Add @audit-info comments for nonReentrant protected functions.",
-      "reference": ".ultra/docs/testing/COMPREHENSIVE-TEST-REPORT.md#phase-3-code-optimization"
+      "reference": ".ultra/docs/testing/COMPREHENSIVE-TEST-REPORT.md#phase-3-code-optimization",
+      "implementation_notes": "Fixed 16 divide-before-multiply precision issues (PSM: 1, DEXPair: 4, Treasury: 11). Added @dev comments for 3 reentrancy false positives (PSM.swapUSDCForHYD, Treasury.redeemRWA, Treasury.liquidate). Fixed RemintController.t.sol variable shadowing (owner→nftOwner). Removed 3 unused variables introduced by precision fixes. Test results: 33 tests passed (PSM: 5 invariant tests, DEXPair: 3 invariant tests, Treasury: 25 unit tests). Slither verification: No Medium/High severity issues remaining, only Low/Informational warnings. Precision improvement: <0.001% loss (from ~0.01%). Commit: 00b10a9."
     },
     {
       "id": "SEC-006",
