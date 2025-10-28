@@ -106,6 +106,7 @@ contract PSM is ReentrancyGuard, Ownable {
     /**
      * @notice Swap USDC for HYD (mint HYD by depositing USDC)
      * @dev User must approve PSM to spend USDC before calling
+     * @dev Slither reentrancy warning is false positive - function protected by nonReentrant modifier
      * @param usdcAmount Amount of USDC to deposit (6 decimals)
      * @return hydReceived Amount of HYD minted to user (18 decimals)
      */
@@ -147,8 +148,9 @@ contract PSM is ReentrancyGuard, Ownable {
         }
 
         // Emit event (fee in HYD decimals for consistency)
+        // @audit-fix: Avoid divide-before-multiply precision loss
         unchecked {
-            emit SwapUSDCForHYD(msg.sender, usdcAmount, hydReceived, feeUSDC * 1e12);
+            emit SwapUSDCForHYD(msg.sender, usdcAmount, hydReceived, (usdcAmount * _feeIn * 1e12) / BP_DENOMINATOR);
         }
     }
 

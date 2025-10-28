@@ -239,16 +239,17 @@ contract DEXPair is ERC20, ReentrancyGuard {
         uint256 fee0 = 0;
         uint256 fee1 = 0;
 
+        // @audit-fix: Avoid divide-before-multiply precision loss
         if (amount0In > 0) {
             fee0 = (amount0In * TOTAL_FEE) / FEE_DENOMINATOR;
-            voterFees0 += (fee0 * VOTER_FEE) / TOTAL_FEE;
-            treasuryFees0 += (fee0 * TREASURY_FEE) / TOTAL_FEE;
+            voterFees0 += (amount0In * VOTER_FEE) / FEE_DENOMINATOR;
+            treasuryFees0 += (amount0In * TREASURY_FEE) / FEE_DENOMINATOR;
         }
 
         if (amount1In > 0) {
             fee1 = (amount1In * TOTAL_FEE) / FEE_DENOMINATOR;
-            voterFees1 += (fee1 * VOTER_FEE) / TOTAL_FEE;
-            treasuryFees1 += (fee1 * TREASURY_FEE) / TOTAL_FEE;
+            voterFees1 += (amount1In * VOTER_FEE) / FEE_DENOMINATOR;
+            treasuryFees1 += (amount1In * TREASURY_FEE) / FEE_DENOMINATOR;
         }
 
         // Verify K invariant (adjusted for fees)

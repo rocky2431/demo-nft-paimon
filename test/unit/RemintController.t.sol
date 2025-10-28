@@ -876,7 +876,7 @@ contract RemintControllerTest is Test {
     /**
      * @notice Helper to complete multiple social tasks
      */
-    function _completeSocialTasks(uint256 tokenId, address owner, uint256 count) internal {
+    function _completeSocialTasks(uint256 tokenId, address nftOwner, uint256 count) internal {
         bytes32[10] memory allTasks = [
             TASK_TWITTER_FOLLOW,
             TASK_TWITTER_RETWEET,
